@@ -1,0 +1,2741 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TPS Görsel Sınav Sistemi - X-Ray Simülasyonu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <style>
+    :root {
+      --navy-bg: #07131e;
+      --navy-panel: #0d1e2e;
+      --navy-card: #13273a;
+      --navy-border: #1e364d;
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.2);
+      --red: #ef4444;
+      --orange: #f59e0b;
+      --blue: #3b82f6;
+      --cyan: #06b6d4;
+      --bg: #eef2f6;
+      --card-bg: #ffffff;
+      --border: #d0d9e2;
+      --text: #1e293b;
+      --text-muted: #64748b;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── ÜST BAR ── */
+    .top {
+      height: 48px;
+      background: var(--navy-bg);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 16px;
+      border-bottom: 1px solid var(--navy-border);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .brand {
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-badge {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid var(--cyan);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+    }
+    .top h1 {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 0;
+      flex: 1;
+      text-align: center;
+      color: #e2e8f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .user {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .timer {
+      padding: 6px 14px;
+      background: rgba(239, 68, 68, 0.25);
+      border: 2px solid #ef4444;
+      border-radius: 8px;
+      color: #ff4d4d;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+      text-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+    }
+
+    /* ── GİRİŞ EKRANLARI ── */
+    .login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--navy-bg) 0%, #0f2b48 100%);
+      padding: 20px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      padding: 32px;
+      width: min(450px, 94vw);
+    }
+    .card h2 {
+      margin: 8px 0;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--navy-bg);
+    }
+    .muted {
+      color: var(--text-muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .field {
+      margin: 14px 0;
+    }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background: #f8fafc;
+      color: var(--text);
+      outline: none;
+      transition: all 0.2s;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--blue);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    .btn {
+      border: 0;
+      border-radius: 6px;
+      padding: 11px 16px;
+      background: var(--navy-panel);
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:hover { background: #1e364d; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.green { background: var(--green); }
+    .btn.green:hover { background: #059669; box-shadow: 0 4px 12px var(--green-glow); }
+    .btn.red { background: var(--red); }
+    .btn.red:hover { background: #dc2626; }
+    .btn.light { background: #e2e8f0; color: #334155; }
+    .btn.light:hover { background: #cbd5e1; }
+    .btn.cyan { background: var(--cyan); color: #fff; }
+    .btn.cyan:hover { background: #0891b2; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .grow { flex: 1; }
+
+    /* ── SINAV IZGARASI ── */
+    .app {
+      height: calc(100vh - 48px);
+      display: grid;
+      grid-template-columns: 90px 1fr 220px;
+      gap: 6px;
+      padding: 6px;
+      background: #091929;
+      overflow: hidden;
+    }
+    .side, .right, .main {
+      background: var(--navy-panel);
+      border: 1px solid var(--navy-border);
+      border-radius: 6px;
+      min-height: 0;
+      overflow: hidden;
+      color: #f1f5f9;
+    }
+
+    /* ── SOL ARAÇ PANELİ ── */
+    .side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      gap: 6px;
+      overflow-y: auto;
+    }
+    .side small {
+      font-size: 9px;
+      font-weight: 800;
+      color: #64748b;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+    .tool {
+      width: 76px;
+      height: 44px;
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .tool:hover {
+      border-color: var(--cyan);
+      background: #18324a;
+    }
+    .tool.active {
+      border: 2px solid var(--cyan);
+      box-shadow: 0 0 10px rgba(6, 182, 212, 0.4);
+      background: #1e3d5a;
+    }
+    .tool-key {
+      font-size: 8px;
+      color: #94a3b8;
+      margin-top: 2px;
+      font-weight: 600;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: #0f172a;
+      color: #fff;
+      font-weight: 800;
+      padding: 3px 10px;
+      font-size: 11px;
+    }
+    .pill.hi { background: #0284c7; color: #fff; }
+    .pill.o2 { background: linear-gradient(90deg, #f97316 50%, #fff 50%); color: #1e293b; }
+    .pill.os { background: linear-gradient(90deg, #06b6d4 50%, #fff 50%); color: #1e293b; }
+
+    /* ── ORTA PANEL (X-RAY + SORU) ── */
+    .main {
+      display: grid;
+      grid-template-rows: 36px 1fr 140px;
+      background: #06111c;
+    }
+    .head {
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #94a3b8;
+      background: rgba(15, 23, 42, 0.8);
+      border-bottom: 1px solid var(--navy-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .head span.hint {
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    /* VIEWER & X-RAY FILTERS */
+    .viewer {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #03080e;
+      cursor: crosshair;
+    }
+    .xwrap {
+      position: relative;
+      transform-origin: center;
+      transition: transform 0.05s ease-out;
+    }
+    .xwrap img {
+      display: block;
+      max-width: min(78vw, 820px);
+      max-height: 56vh;
+      user-select: none;
+      pointer-events: auto;
+      border-radius: 2px;
+    }
+    
+    /* CSS FILTER MODES */
+    .mode-NORMAL { filter: none; }
+    .mode-NEG { filter: invert(100%); }
+    .mode-BW { filter: grayscale(100%) contrast(125%); }
+    .mode-SEN { filter: contrast(200%) brightness(110%) saturate(140%); }
+    .mode-HI { filter: contrast(160%) saturate(240%) hue-rotate(-20deg); }
+    .mode-O2 { filter: contrast(170%) saturate(280%) sepia(70%) hue-rotate(-30deg); }
+    .mode-OS { filter: grayscale(100%) brightness(130%) contrast(220%) hue-rotate(180deg) invert(20%); }
+
+    /* MARKER */
+    .marker {
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      border: 3px solid #ef4444;
+      background: rgba(239, 68, 68, 0.25);
+      box-shadow: 0 0 12px rgba(239, 68, 68, 0.8), inset 0 0 6px rgba(239, 68, 68, 0.5);
+      border-radius: 50%;
+      display: none;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: pulseMarker 1.5s infinite alternate;
+    }
+    @keyframes pulseMarker {
+      0% { transform: translate(-50%, -50%) scale(0.95); box-shadow: 0 0 8px rgba(239,68,68,0.6); }
+      100% { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 18px rgba(239,68,68,1); }
+    }
+
+    /* DARK OVERLAY (TIMER EXPIRED) */
+    .dark-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(3, 8, 14, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 20;
+      backdrop-filter: blur(4px);
+    }
+    .dark-overlay.on { display: flex; }
+    .dark-overlay p {
+      color: #ef4444;
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: 1px;
+    }
+    .dark-overlay small {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    /* QTIMER BAR */
+    .qtimer-bar {
+      height: 6px;
+      background: #0d1e2e;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .qtimer-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ef4444, #ff2233);
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+      transition: width 1s linear, background-color 0.3s;
+    }
+    .qtimer-fill.warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .qtimer-fill.urgent { background: #dc2626; box-shadow: 0 0 16px rgba(220, 38, 38, 0.9); }
+    
+    .qtimer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 12px;
+      background: rgba(15, 23, 42, 0.9);
+      font-size: 11px;
+      color: #94a3b8;
+      border-bottom: 1px solid var(--navy-border);
+    }
+    .qtimer-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 800;
+      font-size: 14px;
+      color: #ff4d4d;
+      text-shadow: 0 0 8px rgba(239, 68, 68, 0.7);
+    }
+    .qtimer-label.urgent { color: #ff0011; animation: timerBlink 0.6s infinite alternate; }
+
+    /* QBOX */
+    .qbox {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+      min-height: 0;
+      background: var(--navy-panel);
+    }
+    .qtext {
+      font-size: 12px;
+      font-weight: 700;
+      color: #f8fafc;
+      line-height: 1.35;
+      flex-shrink: 0;
+    }
+    .answers {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      flex: 1;
+      min-height: 0;
+    }
+    .ans {
+      border: 1px solid var(--navy-border);
+      background: var(--navy-card);
+      color: #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+    }
+    .ans:hover {
+      border-color: var(--cyan);
+      background: #183550;
+      color: #fff;
+    }
+    .ans.sel {
+      border: 2px solid var(--green);
+      background: rgba(16, 185, 129, 0.15);
+      color: #fff;
+      font-weight: 700;
+    }
+    .ans-key {
+      font-size: 9px;
+      font-weight: 800;
+      background: rgba(255,255,255,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #94a3b8;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    /* ── SAĞ PANEL ── */
+    .right {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+    .rtitle {
+      font-size: 10px;
+      font-weight: 800;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    .big {
+      background: #03080e;
+      color: #38bdf8;
+      font: 32px/44px 'JetBrains Mono', monospace;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid var(--navy-border);
+      flex-shrink: 0;
+    }
+    .big.qtimer-big {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ff3344;
+      font: 800 42px/54px 'JetBrains Mono', monospace;
+      text-align: center;
+      border-radius: 8px;
+      border: 2px solid #ef4444;
+      box-shadow: 0 0 16px rgba(239, 68, 68, 0.35);
+      text-shadow: 0 0 10px rgba(255, 51, 68, 0.7);
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .big.qtimer-big.warn {
+      color: #ff2233;
+      border-color: #ff2233;
+      background: rgba(255, 34, 51, 0.22);
+      box-shadow: 0 0 20px rgba(255, 34, 51, 0.5);
+    }
+    .big.qtimer-big.urgent {
+      color: #ffffff;
+      border-color: #ff0011;
+      background: rgba(255, 0, 17, 0.45);
+      box-shadow: 0 0 25px rgba(255, 0, 17, 0.85);
+      animation: timerPulse 0.6s infinite alternate;
+    }
+    @keyframes timerPulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.02); }
+    }
+
+    .zoom-box {
+      background: #03080e;
+      color: #38bdf8;
+      font: 18px/30px 'JetBrains Mono', monospace;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid var(--navy-border);
+      flex-shrink: 0;
+      font-weight: 800;
+    }
+
+    .notice {
+      font-size: 10px;
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 6px;
+      padding: 6px;
+      text-align: center;
+      color: #fbbf24;
+      line-height: 1.3;
+      flex-shrink: 0;
+    }
+    .zooms, .moves {
+      display: grid;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .zooms { grid-template-columns: 1fr 1fr; }
+    .moves { grid-template-columns: repeat(3, 1fr); }
+    .right button {
+      border: 1px solid var(--navy-border);
+      border-radius: 5px;
+      background: var(--navy-card);
+      color: #e2e8f0;
+      height: 28px;
+      font-weight: 800;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+    .right button:hover {
+      background: #1a3854;
+      border-color: var(--cyan);
+    }
+    .qlist {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+      align-content: start;
+      padding-right: 2px;
+    }
+    .qbtn {
+      background: var(--navy-card) !important;
+      color: #94a3b8 !important;
+      border: 1px solid var(--navy-border) !important;
+      height: 26px !important;
+      font-size: 10px !important;
+      font-weight: 700 !important;
+      border-radius: 4px !important;
+    }
+    .qbtn:hover { color: #fff !important; border-color: var(--cyan) !important; }
+    .qbtn.active {
+      border: 2px solid var(--orange) !important;
+      color: #fff !important;
+      background: rgba(245, 158, 11, 0.2) !important;
+    }
+    .qbtn.answered {
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: var(--green) !important;
+      border-color: var(--green) !important;
+    }
+    .finish {
+      background: var(--red) !important;
+      color: #fff !important;
+      border: 0 !important;
+      height: 36px !important;
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .finish:hover { background: #dc2626 !important; }
+
+    /* ── SINAV SONUÇ & YANLIŞ CEVAP İNCELEME EKRANI ── */
+    .result-screen {
+      min-height: 100vh;
+      background: #091929;
+      color: #f8fafc;
+      padding: 24px;
+      overflow-y: auto;
+    }
+    .result-container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .result-header {
+      background: var(--navy-panel);
+      border: 1px solid var(--navy-border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .result-header h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .result-status-banner {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 16px 0;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: inline-block;
+    }
+    .result-status-banner.pass {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--green);
+      border: 2px solid var(--green);
+    }
+    .result-status-banner.fail {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--red);
+      border: 2px solid var(--red);
+    }
+    
+    .result-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .res-card {
+      background: var(--navy-panel);
+      border: 1px solid var(--navy-border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+    .res-val {
+      font-size: 26px;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .res-lbl {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .review-filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .review-filter-btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--navy-border);
+      background: var(--navy-card);
+      color: #94a3b8;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .review-filter-btn.active {
+      background: var(--cyan);
+      color: #fff;
+      border-color: var(--cyan);
+    }
+
+    .review-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .review-item {
+      background: var(--navy-panel);
+      border: 1px solid var(--navy-border);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .review-item.is-wrong {
+      border-left: 5px solid var(--red);
+    }
+    .review-item.is-correct {
+      border-left: 5px solid var(--green);
+    }
+    .review-item img {
+      width: 100px;
+      height: 75px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid var(--navy-border);
+      flex-shrink: 0;
+    }
+    .review-content {
+      flex: 1;
+    }
+    .review-qtitle {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #f1f5f9;
+    }
+    .review-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .review-opt {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      background: var(--navy-card);
+      border: 1px solid var(--navy-border);
+      color: #cbd5e1;
+    }
+    .review-opt.user-wrong {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid var(--red);
+      color: #fca5a5;
+      font-weight: 700;
+    }
+    .review-opt.correct-ans {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid var(--green);
+      color: #6ee7b7;
+      font-weight: 700;
+    }
+
+    .exit-btn-row {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    /* ── ADMİN PANELİ ── */
+    .admin {
+      padding: 24px;
+      overflow: auto;
+      background: var(--bg);
+      min-height: calc(100vh - 48px);
+    }
+    .admin-nav {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 10px;
+    }
+    .tab-btn {
+      padding: 8px 16px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--navy-bg);
+      color: #fff;
+    }
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .admin-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .admin-card h3 {
+      margin: 0 0 16px;
+      font-size: 16px;
+      color: var(--navy-bg);
+      font-weight: 800;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .table th, .table td {
+      padding: 10px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+    .table th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .badge.pass { background: #dcfce7; color: #15803d; }
+    .badge.fail { background: #fee2e2; color: #b91c1c; }
+
+    /* STAT CARDS */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy-bg);
+    }
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* TOAST & MODAL */
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      background: var(--navy-bg);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: none;
+      z-index: 100;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      border: 1px solid var(--navy-border);
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 19, 30, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 90;
+      backdrop-filter: blur(5deg);
+    }
+    .modal.show { display: flex; }
+    .modal .card { text-align: center; max-width: 420px; }
+
+    @media (max-width: 960px) {
+      .app { grid-template-columns: 70px 1fr; }
+      .right { display: none; }
+      .admin-grid { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+      .result-stats-grid { grid-template-columns: 1fr 1fr; }
+      .review-options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PERSONEL GİRİŞ EKRANI -->
+  <div id="loginScreen" class="login">
+    <div class="card">
+      <div class="brand">🛡 GÜVENLİK SİMÜLASYONU <span class="brand-badge">SHGM / TPS v2.0</span></div>
+      <h2>TPS Görsel Sınav Sistemi</h2>
+      <p class="muted">Uygulamalı X-Ray Görüntü Yorumlama ve Tehdit Tespit Prosedürleri</p>
+      
+      <div class="field">
+        <label>Personel Sicil / ID No</label>
+        <input id="loginNo" placeholder="Örn. DEMO001" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Şifre</label>
+        <input id="loginPass" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn green" style="width:100%" onclick="personnelLogin()">Personel Girişi Yap</button>
+      
+      <hr style="border:0;border-top:1px solid #e2e8f0;margin:20px 0">
+      
+      <button class="btn light" style="width:100%" onclick="showAdminLogin()">Yönetici Girişi</button>
+      <p id="loginMsg" class="muted" style="color:var(--red);font-weight:600;margin-top:10px"></p>
+    </div>
+  </div>
+
+  <!-- ADMİN GİRİŞ EKRANI -->
+  <div id="adminLogin" class="login hidden">
+    <div class="card">
+      <h2>Yönetici Girişi</h2>
+      <p class="muted">Supabase Authentication hesabınızla giriş yapın.</p>
+      <div class="field">
+        <label>E-posta Adresi</label>
+        <input id="adminEmail" type="email" placeholder="admin@kurum.gov.tr">
+      </div>
+      <div class="field">
+        <label>Şifre</label>
+        <input id="adminPass" type="password" placeholder="••••••••">
+      </div>
+      <div class="row">
+        <button class="btn light grow" onclick="backLogin()">Geri</button>
+        <button class="btn cyan grow" onclick="adminLogin()">Giriş Yap</button>
+      </div>
+      <p id="adminMsg" class="muted" style="color:var(--red);font-weight:600;margin-top:10px"></p>
+    </div>
+  </div>
+
+  <!-- SINAV EKRANI -->
+  <div id="examScreen" class="hidden">
+    <header class="top">
+      <div class="brand">🛡 TPS SİMÜLATÖRÜ <span class="brand-badge">CANLI SINAV</span></div>
+      <h1>Uygulamalı Görüntü Yorumlama Prosedürleri</h1>
+      <div class="user" id="personName"></div>
+      <div class="timer">⏱ Kalan Süre: <span id="timer">20:00</span></div>
+      <button class="btn red" style="padding:5px 12px;font-size:11px" onclick="exitExamPrompt()">🚪 Çıkış Yap</button>
+    </header>
+
+    <div class="app">
+      <!-- SOL ARAÇ ÇUBUĞU (X-RAY MODLARI) -->
+      <aside class="side">
+        <small>FİLTRELER</small>
+        <button class="tool active" id="btn-NORMAL" onclick="mode('NORMAL')" title="Normal Görüntü (N)">
+          <span class="pill" style="background:#334155">NORM</span>
+          <span class="tool-key">[N]</span>
+        </button>
+        <button class="tool" id="btn-NEG" onclick="mode('NEG')" title="Negatif Invert (G)">
+          <span class="pill" style="background:#0f172a;color:#fff;border:1px solid #fff">NEG</span>
+          <span class="tool-key">[G]</span>
+        </button>
+        <button class="tool" id="btn-BW" onclick="mode('BW')" title="Siyah Beyaz (W)">
+          <span class="pill" style="background:linear-gradient(90deg,#000 50%,#fff 50%);color:#000">B&W</span>
+          <span class="tool-key">[W]</span>
+        </button>
+        <button class="tool" id="btn-SEN" onclick="mode('SEN')" title="Yüksek Yoğunluk Vurgusu (S)">
+          <span class="pill" style="background:#fff;color:#0f172a">SEN</span>
+          <span class="tool-key">[S]</span>
+        </button>
+
+        <small>ORGANİK</small>
+        <button class="tool" id="btn-HI" onclick="mode('HI')" title="Yüksek Organik Emilim (H)">
+          <span class="pill hi">HI</span>
+          <span class="tool-key">[H]</span>
+        </button>
+        <button class="tool" id="btn-O2" onclick="mode('O2')" title="Sadece Organik Malzeme (O)">
+          <span class="pill o2">O₂</span>
+          <span class="tool-key">[O]</span>
+        </button>
+        <button class="tool" id="btn-OS" onclick="mode('OS')" title="Inorganik / Metal Ayırımı (P)">
+          <span class="pill os">OS</span>
+          <span class="tool-key">[P]</span>
+        </button>
+
+        <small>KONTROL</small>
+        <button class="tool" onclick="zoom(-0.15)" title="Uzaklaştır (-)">
+          <span style="font-weight:800">🔍 −</span>
+          <span class="tool-key">[-]</span>
+        </button>
+        <button class="tool" onclick="zoom(0.15)" title="Yakınlaştır (+)">
+          <span style="font-weight:800">🔍 ＋</span>
+          <span class="tool-key">[+]</span>
+        </button>
+        <button class="tool" onclick="resetView()" title="Görünümü Sıfırla (R)">
+          <span style="font-weight:800">↶ sıfırla</span>
+          <span class="tool-key">[R]</span>
+        </button>
+      </aside>
+
+      <!-- ORTA CANVAS VE SORU ALANI -->
+      <section class="main">
+        <div class="head">
+          <span>X-Ray Görüntü İnceleme Paneli</span>
+          <span class="hint">💡 Görüntüyü sürükleyebilir, fare tekerleğiyle yakınlaştırabilirsiniz.</span>
+        </div>
+
+        <div class="viewer" id="viewer">
+          <div class="xwrap" id="xwrap">
+            <img id="xray" src="xray_sample.png" class="mode-NORMAL" alt="X-Ray Image">
+            <div class="marker" id="marker"></div>
+          </div>
+
+          <!-- SÜRE DOLDU OVERLAY -->
+          <div class="dark-overlay" id="darkOverlay">
+            <p>⏱ SORU SÜRESİ DOLDU (25s)</p>
+            <small>Sonraki soruya geçiniz.</small>
+          </div>
+        </div>
+
+        <div class="qtimer-row">
+          <span>Kalan Soru Süresi:</span>
+          <span class="qtimer-label" id="qtimerLabel">25s</span>
+        </div>
+        <div class="qtimer-bar">
+          <div class="qtimer-fill" id="qtimerFill"></div>
+        </div>
+
+        <div class="qbox">
+          <div class="qtext" id="qtext">Soru yükleniyor...</div>
+          <div class="answers" id="answers"></div>
+          <div class="nav" style="justify-content:space-between;width:100%">
+            <span class="muted" id="counter" style="font-weight:700">Soru 1 / 50</span>
+            <button class="btn green" id="btnNext" onclick="nextQ()">Sonraki Soru [→] ›</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAĞ PANEL -->
+      <aside class="right">
+        <div class="rtitle">⏱ SORU SÜRESİ (25s KURALI)</div>
+        <div class="big qtimer-big" id="qtimerBig">25s</div>
+
+        <div class="rtitle">🔍 ZOOM SEVİYESİ</div>
+        <div class="zoom-box" id="zoomRead">100%</div>
+        
+        <div class="notice" id="notice">X-Ray üzerinde henüz alan işaretlenmedi.</div>
+        
+        <div class="rtitle">YAKINLAŞTIRMA</div>
+        <div class="zooms">
+          <button onclick="zoom(0.15)">＋ Yakınlaş</button>
+          <button onclick="zoom(-0.15)">− Uzaklaş</button>
+        </div>
+
+        <div class="rtitle">GÖRÜNTÜ KONUMU</div>
+        <div class="moves">
+          <span></span><button onclick="move(0,-20)">▲</button><span></span>
+          <button onclick="move(-20,0)">◀</button><button onclick="resetPosition()" title="Merkezle">×</button><button onclick="move(20,0)">▶</button>
+          <span></span><button onclick="move(0,20)">▼</button><span></span>
+        </div>
+
+        <div class="rtitle">SORU HARİTASI</div>
+        <div id="qlist" class="qlist"></div>
+
+        <button class="finish" onclick="finishExamPrompt()">⊘ Sınavı Bitir</button>
+      </aside>
+    </div>
+  </div>
+
+  <!-- SINAVI BİTİR ONAY MODALİ -->
+  <div id="finishModal" class="modal">
+    <div class="card" style="max-width:420px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">⚠️</div>
+      <h2 style="margin:0 0 8px;font-size:18px;color:var(--navy-bg)">Sınavı Bitir</h2>
+      <p class="muted" style="margin:0 0 20px" id="finishModalMsg">Sınavı bitirmek istediğinize emin misiniz?</p>
+      <div class="row" style="justify-content:center;gap:12px">
+        <button class="btn light" style="min-width:120px" onclick="closeFinishModal()">İptal</button>
+        <button class="btn red" style="min-width:120px" onclick="confirmFinishExam()">Evet, Bitir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ÇIKIŞ YAP ONAY MODALİ -->
+  <div id="exitModal" class="modal">
+    <div class="card" style="max-width:420px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">🚪</div>
+      <h2 style="margin:0 0 8px;font-size:18px;color:var(--navy-bg)">Sınavdan Çık</h2>
+      <p class="muted" style="margin:0 0 20px">Sınavı bitirmek ve sonuçlarınızı görmek istediğinize emin misiniz?</p>
+      <div class="row" style="justify-content:center;gap:12px">
+        <button class="btn light" style="min-width:120px" onclick="closeExitModal()">İptal</button>
+        <button class="btn red" style="min-width:120px" onclick="confirmExit()">Evet, Çık</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SORU SİLME ONAY MODALİ -->
+  <div id="deleteQuestionModal" class="modal">
+    <div class="card" style="max-width:420px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">🗑️</div>
+      <h2 style="margin:0 0 8px;font-size:18px;color:var(--navy-bg)">Soruyu Sil</h2>
+      <p class="muted" style="margin:0 0 20px">Bu soruyu silmek istediğinize emin misiniz?<br><span style="color:var(--red);font-weight:700">Bu işlem geri alınamaz.</span></p>
+      <div class="row" style="justify-content:center;gap:12px">
+        <button class="btn light" style="min-width:120px" onclick="closeDeleteQuestionModal()">İptal</button>
+        <button class="btn red" style="min-width:120px" onclick="confirmDeleteQuestion()">Evet, Sil</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SINAV SONUÇ EKRANI -->
+  <div id="resultScreen" class="result-screen hidden">
+    <div class="result-container">
+
+      <!-- BAŞLIK -->
+      <div class="result-header">
+        <div class="brand" style="justify-content:center;margin-bottom:10px">🛡 TPS GÜVENLİK SİMÜLASYONU</div>
+        <h2 id="resPersonName" style="margin:0 0 12px;font-size:18px;color:#f1f5f9">Sınav Sonuç Raporu</h2>
+        <div id="resStatusBanner" class="result-status-banner pass">—</div>
+        <div id="resPassInfo" class="muted" style="font-size:13px;margin-top:10px">Her soru 2 puan · Geçme notu %70</div>
+      </div>
+
+      <!-- ÖZET KARTLAR -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px">
+        <div class="res-card">
+          <div class="res-val" id="resTotal" style="color:#f8fafc">—</div>
+          <div class="res-lbl">Toplam Soru</div>
+        </div>
+        <div class="res-card">
+          <div class="res-val" id="resCorrect" style="color:#10b981">—</div>
+          <div class="res-lbl">✅ Doğru</div>
+        </div>
+        <div class="res-card">
+          <div class="res-val" id="resWrong" style="color:#ef4444">—</div>
+          <div class="res-lbl">❌ Yanlış</div>
+        </div>
+        <div class="res-card">
+          <div class="res-val" id="resEmpty" style="color:#f59e0b">—</div>
+          <div class="res-lbl">⬜ Boş</div>
+        </div>
+        <div class="res-card">
+          <div class="res-val" id="resScore" style="color:#06b6d4;font-size:20px">—</div>
+          <div class="res-lbl">🏆 Puan</div>
+        </div>
+      </div>
+
+      <!-- SORU İNCELEME -->
+      <div class="admin-card" style="background:var(--navy-panel);border-color:var(--navy-border);color:#fff">
+        <div class="row" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <h3 style="margin:0;color:#f1f5f9" class="grow">📋 Soru Cevap İnceleme</h3>
+        </div>
+        <div class="review-filter-bar">
+          <button class="review-filter-btn active" id="rf-all"     onclick="filterReview('all')">📋 Tüm Sorular</button>
+          <button class="review-filter-btn"        id="rf-correct" onclick="filterReview('correct')">✅ Doğrular</button>
+          <button class="review-filter-btn"        id="rf-wrong"   onclick="filterReview('wrong')">❌ Yanlış / Boş</button>
+        </div>
+        <div class="review-list" id="reviewList"></div>
+        <div class="exit-btn-row">
+          <button class="btn red" style="padding:14px 32px;font-size:15px" onclick="exitExamSession()">🚪 Sınavdan Çık</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- YÖNETİCİ EKRANI -->
+  <div id="adminScreen" class="hidden">
+    <header class="top">
+      <div class="brand">🛡 TPS YÖNETİM SİSTEMİ</div>
+      <h1>Yönetici Paneli</h1>
+      <button class="btn light" onclick="adminLogout()">Çıkış Yap</button>
+    </header>
+
+    <div class="admin">
+      <div class="admin-nav">
+        <button class="tab-btn active" onclick="switchAdminTab('questions')">Soru Yönetimi</button>
+        <button class="tab-btn" onclick="switchAdminTab('personnel')">Personel Yönetimi</button>
+        <button class="tab-btn" onclick="switchAdminTab('results')">Sınav Sonuçları & Analiz</button>
+      </div>
+
+      <!-- TAB 1: SORU YÖNETİMİ -->
+      <div id="tab-questions" class="admin-tab">
+        <div class="admin-grid">
+          <div class="admin-card">
+            <h3 id="qFormTitle">Yeni X-Ray Sorusu Ekle</h3>
+            <div class="field">
+              <label>Soru Metni / Talimatı</label>
+              <textarea id="aText" rows="3" placeholder="Görüntüyü inceleyerek şüpheli materyali veya durumu işaretleyip seçeneği belirtiniz."></textarea>
+            </div>
+            <div class="field">
+              <label>X-Ray Görseli (Görsel Yükle) — <span id="aImageNote" style="color:#64748b;font-weight:400">Düzenlemede boş bırakırsanız mevcut görsel korunur.</span></label>
+              <input id="aImage" type="file" accept="image/*">
+            </div>
+            <div class="row">
+              <div class="field grow">
+                <label>Zorluk Seviyesi</label>
+                <select id="aDiff">
+                  <option value="1">1 - Kolay</option>
+                  <option value="2">2 - Orta</option>
+                  <option value="3">3 - Zor</option>
+                  <option value="4">4 - Çok Zor (İleri Derece)</option>
+                </select>
+              </div>
+              <div class="field grow">
+                <label>Seçenek Sayısı</label>
+                <select id="aOptCount" onchange="updateOptCountUI()">
+                  <option value="2">2 Seçenek (A-B)</option>
+                  <option value="3">3 Seçenek (A-C)</option>
+                  <option value="4">4 Seçenek (A-D)</option>
+                  <option value="5" selected>5 Seçenek (A-E)</option>
+                </select>
+              </div>
+              <div class="field grow">
+                <label>Doğru Cevap</label>
+                <select id="aCorrect">
+                  <option value="0">A</option>
+                  <option value="1">B</option>
+                  <option value="2">C</option>
+                  <option value="3">D</option>
+                  <option value="4">E</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Seçenekler (Her satıra bir seçenek)</label>
+              <div id="aOptionsContainer"></div>
+            </div>
+            <input type="hidden" id="aEditId" value="">
+            <input type="hidden" id="aEditImagePath" value="">
+            <div class="row" style="gap:8px;margin-top:4px">
+              <button class="btn green grow" onclick="saveQuestion()">💾 Kaydet</button>
+              <button class="btn light" id="qCancelEditBtn" style="display:none" onclick="cancelQuestionEdit()">İptal</button>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="row" style="margin-bottom:12px">
+              <h3 class="grow" style="margin:0">Mevcut Sorular</h3>
+              <button class="btn light" onclick="loadAdminQuestions()">Yenile</button>
+            </div>
+            <div style="max-height:480px;overflow-y:auto">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Görsel</th>
+                    <th>Soru Metni</th>
+                    <th>Zorluk</th>
+                    <th>Doğru</th>
+                    <th>Seçenek</th>
+                    <th>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody id="questionTableBody">
+                  <tr><td colspan="6" style="text-align:center;color:#94a3b8">Yükleniyor...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: PERSONEL YÖNETİMİ (1000 KULLANICI KAPASİTELİ) -->
+      <div id="tab-personnel" class="admin-tab hidden">
+
+        <!-- TOPLU YÜKLEME BÖLÜMÜ -->
+        <div class="admin-card" style="margin-bottom:16px">
+          <div class="row" style="margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <h3 style="margin:0" class="grow">📥 Toplu Personel Yükleme (CSV)</h3>
+            <button class="btn light" onclick="downloadPersonnelTemplate()">⬇️ CSV Şablonu İndir</button>
+          </div>
+          <p class="muted" style="margin:0 0 10px;font-size:12px">
+            CSV dosyası şu sütunları içermelidir: <b>sicil_no, ad_soyad, havalimani, vardiya, sifre</b><br>
+            İlk satır başlık olmalı. Şifre boş bırakılırsa sicil_no şifre olarak kullanılır.
+          </p>
+          <div class="row" style="gap:10px;flex-wrap:wrap">
+            <input type="file" id="csvFile" accept=".csv,.txt" style="flex:1;padding:8px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;font:inherit">
+            <button class="btn cyan" onclick="importPersonnelCSV()">📤 CSV Yükle ve Aktar</button>
+          </div>
+          <div id="csvResult" style="margin-top:10px;display:none"></div>
+        </div>
+
+        <div class="admin-grid">
+          <div class="admin-card">
+            <h3 id="pFormTitle">Yeni Personel Tanımla</h3>
+            <input type="hidden" id="pEditId" value="">
+            <div class="field">
+              <label>Sicil / Personel No</label>
+              <input id="pNo" placeholder="Örn. SEC2024001" autocomplete="off">
+            </div>
+            <div class="field">
+              <label>Ad Soyad</label>
+              <input id="pName" placeholder="Ad Soyad">
+            </div>
+            <div class="row">
+              <div class="field grow">
+                <label>Havalimanı / İstasyon</label>
+                <input id="pAirport" placeholder="Örn. Sabiha Gökçen">
+              </div>
+              <div class="field grow">
+                <label>Vardiya</label>
+                <input id="pShift" placeholder="Örn. Gündüz A">
+              </div>
+            </div>
+            <div class="field">
+              <label>Giriş Şifresi <small class="muted" id="pPassHint">(Zorunlu)</small></label>
+              <input id="pPass" type="password" placeholder="••••••••">
+            </div>
+            <div class="field" id="pActiveField">
+              <label>Hesap Durumu</label>
+              <select id="pActive">
+                <option value="true">Aktif (Giriş Yapabilir)</option>
+                <option value="false">Pasif (Giriş Engellensin)</option>
+              </select>
+            </div>
+            <button class="btn green" id="pSubmitBtn" style="width:100%" onclick="savePersonnel()">Personel Hesabını Oluştur</button>
+            <button class="btn light hidden" id="pCancelBtn" style="width:100%;margin-top:8px" onclick="resetPersonnelForm()">Formu Temizle / İptal</button>
+          </div>
+
+          <div class="admin-card">
+            <div class="row" style="margin-bottom:10px">
+              <h3 class="grow" style="margin:0">Kayıtlı Personel Listesi</h3>
+              <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:11px" id="pCountBadge">0 / 1000 Personel</span>
+              <button class="btn light" onclick="loadPersonnelList()">Yenile</button>
+            </div>
+            <input id="pSearch" placeholder="🔍 Sicil no, ad soyad veya havalimanı ile ara..." style="margin-bottom:12px;padding:8px 12px;width:100%;border:1px solid #cbd5e1;border-radius:6px;font-size:12px" oninput="renderPersonnelTable()">
+            <div style="max-height:460px;overflow-y:auto">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Sicil</th>
+                    <th>Ad Soyad</th>
+                    <th>Havalimanı</th>
+                    <th>Vardiya</th>
+                    <th>Durum</th>
+                    <th>İşlemler</th>
+                  </tr>
+                </thead>
+                <tbody id="personnelTableBody">
+                  <tr><td colspan="6" style="text-align:center;color:#94a3b8">Yükleniyor...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: SINAV SONUÇLARI & KİŞİ BAZLI ANALİZ -->
+      <div id="tab-results" class="admin-tab hidden">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="statTotal">0</div>
+            <div class="stat-lbl">Toplam Katılım</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statPassRate">0%</div>
+            <div class="stat-lbl">Başarı Oranı</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statAvgScore">0</div>
+            <div class="stat-lbl">Ortalama Puan</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-val" id="statPassedCount">0</div>
+            <div class="stat-lbl">Başarılı Personel</div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="row" style="margin-bottom:10px">
+            <h3 class="grow" style="margin:0">Detaylı Personel Sınav Sonuçları</h3>
+            <button class="btn light" onclick="exportResultsCSV()">📥 CSV İndir</button>
+            <button class="btn cyan" onclick="loadResults()">Listeyi Yenile</button>
+          </div>
+          <input id="rSearch" placeholder="🔍 Personel sicil no veya ad soyada göre sınav arayın..." style="margin-bottom:12px;padding:8px 12px;width:100%;border:1px solid #cbd5e1;border-radius:6px;font-size:12px" oninput="renderResultsTable()">
+          <div style="overflow-x:auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Personel</th>
+                  <th>Sicil</th>
+                  <th>Havalimanı</th>
+                  <th>Doğru</th>
+                  <th>Yanlış</th>
+                  <th>Boş</th>
+                  <th>Puan</th>
+                  <th>Durum</th>
+                  <th>Tarih</th>
+                </tr>
+              </thead>
+              <tbody id="results">
+                <tr><td colspan="9" style="text-align:center;color:#94a3b8">Yükleniyor...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOAST BİLDİRİM -->
+  <div id="toast" class="toast"></div>
+
+  <!-- UYGULAMA MANTIĞI VE JAVASCRIPT -->
+  <script>
+    const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    
+    let personnel = null;
+    let exam = null;
+    let questions = [];
+    let current = 0;
+    let answers = [];
+    let attemptId = null;
+    let seconds = 1200;
+    let scale = 1;
+    let px = 0;
+    let py = 0;
+    let modeName = 'NORMAL';
+    let timerId = null;
+    let qSeconds = 25;
+    let qTimerId = null;
+    
+    let reviewData = [];
+    let currentFilter = 'wrong';
+
+    // Pan & Drag State
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let hasDragged = false;
+
+    const $ = id => document.getElementById(id);
+
+    function toast(t) {
+      const el = $('toast');
+      el.textContent = t;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    function showAdminLogin() {
+      $('loginScreen').classList.add('hidden');
+      $('adminLogin').classList.remove('hidden');
+    }
+
+    function backLogin() {
+      $('adminLogin').classList.add('hidden');
+      $('loginScreen').classList.remove('hidden');
+    }
+
+    /* ── PERSONEL GİRİŞİ ── */
+    async function personnelLogin() {
+      const no = $('loginNo').value.trim();
+      const pass = $('loginPass').value;
+      if (!no || !pass) {
+        $('loginMsg').textContent = 'Lütfen sicil numarası ve şifre giriniz.';
+        return;
+      }
+      $('loginMsg').textContent = 'Giriş kontrol ediliyor...';
+      const { data, error } = await client.rpc('personnel_login', { p_employee_no: no, p_password: pass });
+      if (error || !data || data.length === 0) {
+        $('loginMsg').textContent = 'Giriş başarısız. Sicil veya şifre hatalı.';
+        return;
+      }
+      personnel = data[0];
+      await startExam();
+    }
+
+    /* ── SINAV BAŞLATMA ── */
+    async function startExam() {
+      const r = await client.rpc('get_active_exam');
+      if (r.error || !r.data) {
+        $('loginMsg').textContent = 'Aktif sınav bulunamadı. Lütfen yöneticiye başvurun.';
+        return;
+      }
+      exam = r.data.exam;
+      questions = r.data.questions;
+
+      if (!questions || questions.length === 0) {
+        $('loginMsg').textContent = 'Sınav için hazırlanmış soru bulunamadı.';
+        return;
+      }
+
+      answers = questions.map(() => ({ selected: null, x: null, y: null }));
+      seconds = exam.duration_seconds || 1200;
+
+      const a = await client.rpc('start_attempt', { p_exam_id: exam.id, p_personnel_id: personnel.id });
+      if (a.error) {
+        $('loginMsg').textContent = 'Sınav oturumu başlatılamadı: ' + a.error.message;
+        return;
+      }
+      attemptId = a.data;
+
+      $('loginScreen').classList.add('hidden');
+      $('examScreen').classList.remove('hidden');
+      $('personName').textContent = `👤 ${personnel.full_name} (${personnel.employee_no})`;
+
+      buildList();
+      render();
+      timerId = setInterval(tick, 1000);
+      resetQTimer();
+    }
+
+    /* ── SINAV VE SORU ZAMANLAYICILARI ── */
+    function tick() {
+      seconds--;
+      if (seconds < 0) seconds = 0;
+      const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const s = String(seconds % 60).padStart(2, '0');
+      $('timer').textContent = m + ':' + s;
+      if (seconds === 0) {
+        finishExam('expired');
+      }
+    }
+
+    function disableCurrentQuestionOptions() {
+      document.querySelectorAll('.ans').forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.4';
+        btn.style.pointerEvents = 'none';
+      });
+    }
+
+    function enableCurrentQuestionOptions() {
+      document.querySelectorAll('.ans').forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      });
+    }
+
+    function startQTimer() {
+      clearInterval(qTimerId);
+      qTimerId = setInterval(() => {
+        qSeconds--;
+        if (qSeconds < 0) qSeconds = 0;
+        updateQTimer();
+        if (qSeconds === 0) {
+          clearInterval(qTimerId);
+          $('darkOverlay').classList.add('on');
+          disableCurrentQuestionOptions();
+        }
+      }, 1000);
+    }
+
+    function updateQTimer() {
+      const pct = (qSeconds / 25) * 100;
+      const f = $('qtimerFill');
+      const l = $('qtimerLabel');
+      const big = $('qtimerBig');
+
+      if (f) f.style.width = pct + '%';
+      if (l) l.textContent = qSeconds + 's';
+      if (big) {
+        big.textContent = qSeconds + 's';
+        big.classList.toggle('warn', qSeconds <= 10 && qSeconds > 5);
+        big.classList.toggle('urgent', qSeconds <= 5);
+      }
+
+      if (f) {
+        f.classList.toggle('warn', qSeconds <= 10 && qSeconds > 5);
+        f.classList.toggle('urgent', qSeconds <= 5);
+      }
+      if (l) l.classList.toggle('urgent', qSeconds <= 5);
+    }
+
+    function resetQTimer() {
+      clearInterval(qTimerId);
+      $('darkOverlay').classList.remove('on');
+      qSeconds = 25;
+      enableCurrentQuestionOptions();
+      updateQTimer();
+      startQTimer();
+    }
+
+    /* ── SORU HARİTASI (LİSTE) ── */
+    function buildList() {
+      const l = $('qlist');
+      l.innerHTML = '';
+      questions.forEach((q, i) => {
+        const b = document.createElement('button');
+        b.className = 'qbtn';
+        b.textContent = i + 1;
+        b.onclick = () => {
+          current = i;
+          render();
+          resetQTimer();
+        };
+        l.appendChild(b);
+      });
+    }
+
+    /* ── SORU VE EKRAN RENDER ── */
+    function render() {
+      const q = questions[current];
+      $('qtext').textContent = `SORU ${current + 1} / ${questions.length} : ${q.question_text}`;
+      $('counter').textContent = `Soru ${current + 1} / ${questions.length}`;
+      $('xray').src = getImage(q.image_path);
+
+      // GÜVENLİ SEÇENEK PARSE ISLEMI
+      let opts = q.options;
+      if (typeof opts === 'string') {
+        try { opts = JSON.parse(opts); } catch(e) {}
+      }
+      if (typeof opts === 'string') {
+        try { opts = JSON.parse(opts); } catch(e) {}
+      }
+      if (!Array.isArray(opts)) {
+        opts = [];
+      }
+
+      // Seçenekleri oluştur
+      const a = $('answers');
+      a.innerHTML = '';
+      // Seçenek sayısına göre grid'i ayarla
+      const colCount = opts.length <= 2 ? opts.length : 2;
+      a.style.gridTemplateColumns = `repeat(${colCount}, 1fr)`;
+      const keys = ['A', 'B', 'C', 'D', 'E'];
+      opts.forEach((o, i) => {
+        const b = document.createElement('button');
+        b.className = 'ans' + (answers[current].selected === i ? ' sel' : '');
+        b.innerHTML = `<span class="ans-key">[${keys[i]}]</span> <span>${o}</span>`;
+        b.onclick = () => {
+          if (qSeconds <= 0) return;
+          $('darkOverlay').classList.remove('on');
+          selectAnswer(i);
+        };
+        a.appendChild(b);
+      });
+
+      // Soru listesi buton güncelleme
+      document.querySelectorAll('.qbtn').forEach((b, i) => {
+        b.classList.toggle('active', i === current);
+        b.classList.toggle('answered', answers[i].selected !== null);
+      });
+
+      resetPosition();
+
+      // Marker yükleme ve konumlandırma
+      const m = $('marker');
+      if (answers[current].x !== null && answers[current].y !== null) {
+        m.style.left = answers[current].x + '%';
+        m.style.top = answers[current].y + '%';
+        m.style.display = 'block';
+        m.dataset.x = answers[current].x;
+        m.dataset.y = answers[current].y;
+        $('notice').textContent = `📍 Seçilen Alan: X: %${answers[current].x}, Y: %${answers[current].y}`;
+      } else {
+        m.style.display = 'none';
+        $('notice').textContent = 'X-Ray üzerinde henüz alan işaretlenmedi.';
+      }
+
+      if (qSeconds <= 0) {
+        disableCurrentQuestionOptions();
+      }
+    }
+
+    function getImage(path) {
+      if (path.startsWith('http')) return path;
+      return client.storage.from('xray-images').getPublicUrl(path).data.publicUrl;
+    }
+
+    async function selectAnswer(i) {
+      if (qSeconds <= 0) {
+        toast('⏱ Soru süresi doldu! Sonraki soruya geçiniz.');
+        return;
+      }
+      answers[current].selected = i;
+      const p = markerPosition();
+      if (p) {
+        answers[current].x = p.x;
+        answers[current].y = p.y;
+      }
+      await client.rpc('save_answer', {
+        p_attempt_id: attemptId,
+        p_question_id: questions[current].id,
+        p_selected_option: i,
+        p_marker_x: p?.x ?? null,
+        p_marker_y: p?.y ?? null
+      });
+      render();
+    }
+
+    function markerPosition() {
+      const m = $('marker');
+      if (m.style.display === 'none') return null;
+      return { x: parseFloat(m.dataset.x), y: parseFloat(m.dataset.y) };
+    }
+
+    function nextQ() {
+      if (current < questions.length - 1) {
+        current++;
+        render();
+        resetQTimer();
+      } else {
+        toast('Son sorudasınız.');
+      }
+    }
+
+    /* ── X-RAY ZOOM, PAN VE FILTRE İŞLEMLERİ ── */
+    function zoom(v) {
+      scale = Math.max(0.6, Math.min(3.5, scale + v));
+      apply();
+      $('zoomRead').textContent = Math.round(scale * 100) + '%';
+    }
+
+    function move(x, y) {
+      px += x;
+      py += y;
+      apply();
+    }
+
+    function resetPosition() {
+      px = 0;
+      py = 0;
+      scale = 1;
+      apply();
+      $('zoomRead').textContent = '100%';
+    }
+
+    function resetView() {
+      resetPosition();
+      mode('NORMAL');
+      const m = $('marker');
+      m.style.display = 'none';
+      answers[current].x = null;
+      answers[current].y = null;
+      $('notice').textContent = 'X-Ray üzerinde henüz alan işaretlenmedi.';
+    }
+
+    function apply() {
+      $('xwrap').style.transform = `translate(${px}px, ${py}px) scale(${scale})`;
+    }
+
+    function mode(n) {
+      modeName = n;
+      const img = $('xray');
+      img.className = 'mode-' + n;
+
+      document.querySelectorAll('.side .tool').forEach(b => b.classList.remove('active'));
+      const activeBtn = $('btn-' + n);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const modeTitles = {
+        'NORMAL': 'Normal Görüntü',
+        'NEG': 'Negatif (Invert)',
+        'BW': 'Siyah / Beyaz (Monokrom)',
+        'SEN': 'Süper Yüksek Yoğunluk',
+        'HI': 'Yüksek Organik Emilim (High Organic)',
+        'O2': 'Sadece Organik Malzeme (Organic Only)',
+        'OS': 'Inorganik / Metal Ayırımı (Organic Stripping)'
+      };
+      toast('Görüntü Modu: ' + (modeTitles[n] || n));
+    }
+
+    /* ── MOUSE DRAG & WHEEL ZOOM & MARKER TIKLAMA ── */
+    const viewer = $('viewer');
+
+    viewer.addEventListener('mousedown', e => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      hasDragged = false;
+      dragStartX = e.clientX - px;
+      dragStartY = e.clientY - py;
+    });
+
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      if (Math.abs(dx - px) > 4 || Math.abs(dy - py) > 4) {
+        hasDragged = true;
+      }
+      px = dx;
+      py = dy;
+      apply();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    viewer.addEventListener('wheel', e => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 0.15 : -0.15;
+      zoom(delta);
+    }, { passive: false });
+
+    viewer.addEventListener('click', e => {
+      if (qSeconds <= 0) {
+        toast('⏱ Soru süresi doldu! Sonraki soruya geçiniz.');
+        return;
+      }
+      if (hasDragged) {
+        hasDragged = false;
+        return;
+      }
+
+      const xray = $('xray');
+      const r = xray.getBoundingClientRect();
+
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
+        return;
+      }
+
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+
+      const pctX = ((x / r.width) * 100).toFixed(2);
+      const pctY = ((y / r.height) * 100).toFixed(2);
+
+      const m = $('marker');
+      m.style.left = pctX + '%';
+      m.style.top = pctY + '%';
+      m.dataset.x = pctX;
+      m.dataset.y = pctY;
+      m.style.display = 'block';
+
+      answers[current].x = pctX;
+      answers[current].y = pctY;
+
+      $('notice').textContent = `📍 Alan İşaretlendi (X: %${pctX}, Y: %${pctY})`;
+
+      if (answers[current].selected !== null) {
+        client.rpc('save_answer', {
+          p_attempt_id: attemptId,
+          p_question_id: questions[current].id,
+          p_selected_option: answers[current].selected,
+          p_marker_x: pctX,
+          p_marker_y: pctY
+        });
+      }
+    });
+
+    /* ── KLAVYE KISAYOLLARI ── */
+    document.addEventListener('keydown', e => {
+      if ($('examScreen').classList.contains('hidden')) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+      const k = e.key;
+      if (k === 'ArrowRight') nextQ();
+      else if (['1','2','3','4','5'].includes(k)) selectAnswer(parseInt(k) - 1);
+      else if (['a','b','c','d','e'].includes(k.toLowerCase())) {
+        const idx = ['a','b','c','d','e'].indexOf(k.toLowerCase());
+        if (idx !== -1) selectAnswer(idx);
+      }
+      else if (k.toLowerCase() === 'n') mode('NORMAL');
+      else if (k.toLowerCase() === 'g') mode('NEG');
+      else if (k.toLowerCase() === 'w') mode('BW');
+      else if (k.toLowerCase() === 's') mode('SEN');
+      else if (k.toLowerCase() === 'h') mode('HI');
+      else if (k.toLowerCase() === 'o') mode('O2');
+      else if (k.toLowerCase() === 'p') mode('OS');
+      else if (k.toLowerCase() === 'r') resetView();
+      else if (k === '+' || k === '=') zoom(0.15);
+      else if (k === '-') zoom(-0.15);
+    });
+
+    /* ── SINAV BİTİRME & SONUÇ ÖZETİ ── */
+    function exitExamPrompt() {
+      const modal = document.getElementById('exitModal');
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeExitModal() {
+      const modal = document.getElementById('exitModal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function confirmExit() {
+      closeExitModal();
+      finishExam('finished');
+    }
+
+    function finishExamPrompt() {
+      const answeredCount = answers.filter(a => a.selected !== null).length;
+      const total = questions.length;
+      const msg = `Sınavı bitirmek istediğinize emin misiniz?\nCevaplanan Soru: ${answeredCount} / ${total}`;
+      const el = document.getElementById('finishModalMsg');
+      if (el) el.textContent = msg;
+      const modal = document.getElementById('finishModal');
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeFinishModal() {
+      const modal = document.getElementById('finishModal');
+      if (modal) modal.classList.remove('show');
+    }
+
+    function confirmFinishExam() {
+      closeFinishModal();
+      finishExam('finished');
+    }
+
+    async function finishExam(status = 'finished') {
+      try {
+        clearInterval(timerId);
+        clearInterval(qTimerId);
+
+        // Her sorunun doğru cevabıyla kıyasla
+        reviewData = questions.map((q, i) => {
+          const sel = (answers[i] && answers[i].selected !== undefined) ? answers[i].selected : null;
+          const correctOpt = (q.correct_option !== undefined && q.correct_option !== null)
+            ? Number(q.correct_option) : null;
+          const selNum = sel !== null ? Number(sel) : null;
+          const isCorrect = (selNum !== null && correctOpt !== null && selNum === correctOpt);
+
+          // Debug: konsolda kontrol et
+          console.log(`Soru ${i+1}: seçilen=${sel}(${typeof sel}) doğru=${q.correct_option}(${typeof q.correct_option}) → ${isCorrect}`);
+
+          return {
+            question_id:     q.id,
+            question_text:   q.question_text,
+            image_path:      q.image_path,
+            options:         q.options,
+            correct_option:  correctOpt,
+            selected_option: selNum,
+            is_correct:      isCorrect
+          };
+        });
+
+        const total       = reviewData.length;
+        const correct     = reviewData.filter(x => x.is_correct).length;
+        const answered    = reviewData.filter(x => x.selected_option !== null).length;
+        const wrong       = answered - correct;
+        const empty       = total - answered;
+        const maxScore    = total * 2;
+        const earnedScore = correct * 2;
+        const pct         = maxScore > 0 ? Math.round((earnedScore / maxScore) * 100 * 10) / 10 : 0;
+        const passScore   = (exam && exam.pass_score) ? exam.pass_score : 70;
+        const passed      = pct >= passScore;
+
+        // Arka planda Supabase'e kaydet
+        if (attemptId) {
+          try {
+            await client.rpc('finish_attempt', { p_attempt_id: attemptId, p_status: status });
+          } catch(e) {
+            console.warn('finish_attempt:', e);
+          }
+        }
+
+        showResultScreen({ total, correct, wrong, empty, earnedScore, maxScore, pct, passed });
+
+      } catch(err) {
+        console.error('finishExam hata:', err);
+        alert('Sonuç ekranı açılırken hata oluştu: ' + err.message);
+      }
+    }
+
+    function showResultScreen(r) {
+      // Sınav ekranını gizle, sonuç ekranını göster
+      document.getElementById('examScreen').classList.add('hidden');
+      document.getElementById('resultScreen').classList.remove('hidden');
+
+      const isPass = r.passed;
+
+      // Kişi adı
+      if (personnel) {
+        $('resPersonName').textContent =
+          '👤 ' + personnel.full_name + '  |  Sicil: ' + personnel.employee_no;
+      }
+
+      // Ana banner
+      const banner = $('resStatusBanner');
+      if (isPass) {
+        banner.textContent = '🎉 BAŞARILI  —  ' + r.earnedScore + ' / ' + r.maxScore + ' Puan  (' + r.pct + ' / 100)';
+        banner.className = 'result-status-banner pass';
+      } else {
+        banner.textContent = '⚠️ BAŞARISIZ  —  ' + r.earnedScore + ' / ' + r.maxScore + ' Puan  (' + r.pct + ' / 100)';
+        banner.className = 'result-status-banner fail';
+      }
+
+      $('resPassInfo').innerHTML =
+        'Her soru <b>2 puan</b> &nbsp;·&nbsp; Geçme notu <b>%70</b> &nbsp;·&nbsp; ' +
+        'Maksimum <b>' + r.maxScore + ' puan</b>';
+
+      // Kartlar
+      $('resTotal').textContent   = r.total;
+      $('resCorrect').textContent = r.correct;
+      $('resWrong').textContent   = r.wrong;
+      $('resEmpty').textContent   = r.empty;
+      $('resScore').textContent   = r.earnedScore + ' / ' + r.maxScore;
+
+      // Soru inceleme — varsayılan tüm sorular
+      filterReview('all');
+    }
+
+    function filterReview(type) {
+      currentFilter = type;
+
+      document.querySelectorAll('.review-filter-btn').forEach(b => b.classList.remove('active'));
+      const btn = $('rf-' + type);
+      if (btn) btn.classList.add('active');
+
+      const listEl = $('reviewList');
+      listEl.innerHTML = '';
+
+      if (!reviewData || reviewData.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8">Veri yok.</div>';
+        return;
+      }
+
+      let filtered = reviewData;
+      if (type === 'correct') filtered = reviewData.filter(x => x.is_correct);
+      if (type === 'wrong')   filtered = reviewData.filter(x => !x.is_correct);
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-weight:600">' +
+          (type === 'wrong' ? '🎉 Tebrikler! Yanlış cevabınız yok.' : 'Gösterilecek soru bulunamadı.') +
+          '</div>';
+        return;
+      }
+
+      const keys = ['A', 'B', 'C', 'D', 'E'];
+
+      filtered.forEach((item, idx) => {
+        let opts = item.options;
+        if (typeof opts === 'string') { try { opts = JSON.parse(opts); } catch(e) {} }
+        if (!Array.isArray(opts)) opts = [];
+
+        const sel     = item.selected_option;
+        const correct = item.correct_option;
+        const isOk    = item.is_correct;
+
+        // Kullanıcı cevabı
+        let userBadge = '';
+        if (sel === null || sel === undefined) {
+          userBadge = '<span style="color:#f59e0b;font-weight:700">⬜ Boş Bırakıldı</span>';
+        } else if (isOk) {
+          userBadge = '<span style="color:#10b981;font-weight:700">✅ Doğru: ' + keys[sel] + ' — ' + (opts[sel] || '') + '</span>';
+        } else {
+          userBadge = '<span style="color:#ef4444;font-weight:700">❌ Cevabınız: ' + keys[sel] + ' — ' + (opts[sel] || '') + '</span>';
+        }
+
+        // Doğru cevap
+        const correctBadge = (correct !== null && correct !== undefined)
+          ? '<span style="color:#10b981;font-weight:700">✅ Doğru: ' + keys[correct] + ' — ' + (opts[correct] || '') + '</span>'
+          : '';
+
+        // Seçenek listesi
+        let optsHtml = '<div class="review-options">';
+        opts.forEach((o, i) => {
+          let cls = 'review-opt';
+          if (i === correct) cls += ' correct-ans';
+          else if (i === sel && !isOk) cls += ' user-wrong';
+          optsHtml += '<div class="' + cls + '">[' + (keys[i] || i) + '] ' + o + '</div>';
+        });
+        optsHtml += '</div>';
+
+        const imgUrl = getImage(item.image_path);
+
+        const card = document.createElement('div');
+        card.className = 'review-item ' + (isOk ? 'is-correct' : 'is-wrong');
+        card.innerHTML =
+          '<img src="' + imgUrl + '" alt="X-Ray">' +
+          '<div class="review-content">' +
+            '<div class="review-qtitle">Soru ' + (idx + 1) + ': ' + item.question_text + '</div>' +
+            '<div style="font-size:12px;margin:6px 0;display:flex;gap:16px;flex-wrap:wrap">' +
+              '<div>' + userBadge + '</div>' +
+              (isOk ? '' : '<div>' + correctBadge + '</div>') +
+            '</div>' +
+            optsHtml +
+          '</div>';
+
+        listEl.appendChild(card);
+      });
+    }
+
+    function goToLogin() {
+      clearInterval(timerId);
+      clearInterval(qTimerId);
+      personnel = null;
+      attemptId = null;
+      exam = null;
+      questions = [];
+      answers = [];
+      reviewData = [];
+      current = 0;
+      seconds = 1200;
+      scale = 1;
+      px = 0;
+      py = 0;
+
+      // Tüm ekranları gizle
+      ['examScreen', 'resultScreen', 'adminScreen', 'adminLogin', 'finishModal', 'exitModal', 'deleteQuestionModal'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.add('hidden');
+          el.classList.remove('show'); // modal için
+        }
+      });
+
+      // Login ekranını göster
+      const loginEl = document.getElementById('loginScreen');
+      if (loginEl) loginEl.classList.remove('hidden');
+
+      // Formu temizle
+      const no = document.getElementById('loginNo');
+      const pass = document.getElementById('loginPass');
+      const msg = document.getElementById('loginMsg');
+      if (no) no.value = '';
+      if (pass) pass.value = '';
+      if (msg) msg.textContent = '';
+    }
+
+    function exitExamSession() {
+      goToLogin();
+    }
+
+    /* ── ADMİN GİRİŞİ & YÖNETİMİ ── */
+    async function adminLogin() {
+      const email = $('adminEmail').value.trim();
+      const password = $('adminPass').value;
+      if (!email || !password) {
+        $('adminMsg').textContent = 'E-posta ve şifre giriniz.';
+        return;
+      }
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if (error) {
+        $('adminMsg').textContent = error.message;
+        return;
+      }
+      const ok = await client.rpc('is_admin');
+      if (ok.error || !ok.data) {
+        await client.auth.signOut();
+        $('adminMsg').textContent = 'Bu hesap yetkili bir yönetici olarak tanımlı değil.';
+        return;
+      }
+      $('adminLogin').classList.add('hidden');
+      $('adminScreen').classList.remove('hidden');
+      cancelQuestionEdit(); // formu sıfırla ve seçenek inputlarını oluştur
+      loadAdminQuestions();
+      loadPersonnelList();
+      loadResults();
+    }
+
+    async function adminLogout() {
+      await client.auth.signOut();
+      location.reload();
+    }
+
+    function switchAdminTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+
+      event.target.classList.add('active');
+      $('tab-' + tabName).classList.remove('hidden');
+
+      if (tabName === 'questions') loadAdminQuestions();
+      else if (tabName === 'personnel') loadPersonnelList();
+      else if (tabName === 'results') loadResults();
+    }
+
+    /* ── SORU OLUŞTURMA & LİSTELEME ── */
+
+    // Seçenek sayısına göre form inputlarını güncelle
+    function updateOptCountUI() {
+      const count = parseInt(document.getElementById('aOptCount').value);
+      const container = document.getElementById('aOptionsContainer');
+      const correctSel = document.getElementById('aCorrect');
+      const keys = ['A', 'B', 'C', 'D', 'E'];
+
+      // Mevcut değerleri koru
+      const oldVals = [];
+      container.querySelectorAll('input').forEach(inp => oldVals.push(inp.value));
+
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px';
+        wrap.innerHTML = `
+          <span style="font-weight:800;min-width:20px;color:#64748b">${keys[i]})</span>
+          <input type="text" style="flex:1;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;background:#f8fafc;font:inherit;outline:none"
+            placeholder="${keys[i]} seçeneği" value="${oldVals[i] || ''}">
+        `;
+        container.appendChild(wrap);
+      }
+
+      // Doğru cevap dropdown'ını güncelle
+      const prevCorrect = correctSel.value;
+      correctSel.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = keys[i];
+        correctSel.appendChild(opt);
+      }
+      if (parseInt(prevCorrect) < count) correctSel.value = prevCorrect;
+    }
+
+    // Formu sıfırla (yeni soru modu)
+    function cancelQuestionEdit() {
+      document.getElementById('aEditId').value = '';
+      document.getElementById('aEditImagePath').value = '';
+      document.getElementById('aText').value = '';
+      document.getElementById('aImage').value = '';
+      document.getElementById('aDiff').value = '1';
+      document.getElementById('aOptCount').value = '5';
+      document.getElementById('qFormTitle').textContent = 'Yeni X-Ray Sorusu Ekle';
+      document.getElementById('qCancelEditBtn').style.display = 'none';
+      updateOptCountUI();
+    }
+
+    // Soruyu düzenleme moduna yükle
+    function editQuestion(q) {
+      let opts = q.options;
+      if (typeof opts === 'string') { try { opts = JSON.parse(opts); } catch(e) {} }
+      if (!Array.isArray(opts)) opts = [];
+
+      document.getElementById('aEditId').value = q.id;
+      document.getElementById('aEditImagePath').value = q.image_path || '';
+      document.getElementById('aText').value = q.question_text || '';
+      document.getElementById('aDiff').value = q.difficulty || 1;
+      document.getElementById('aOptCount').value = opts.length || 5;
+      document.getElementById('qFormTitle').textContent = '✏️ Soruyu Düzenle';
+      document.getElementById('qCancelEditBtn').style.display = '';
+
+      updateOptCountUI();
+
+      // Seçenek değerlerini doldur
+      const inputs = document.getElementById('aOptionsContainer').querySelectorAll('input');
+      opts.forEach((val, i) => { if (inputs[i]) inputs[i].value = val; });
+
+      document.getElementById('aCorrect').value = q.correct_option ?? 0;
+
+      // Forma kaydır
+      document.getElementById('qFormTitle').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Kaydet (hem yeni ekleme hem güncelleme)
+    async function saveQuestion() {
+      const editId = document.getElementById('aEditId').value.trim();
+      const text = document.getElementById('aText').value.trim();
+      const file = document.getElementById('aImage').files[0];
+      const correct = Number(document.getElementById('aCorrect').value);
+      const diff = Number(document.getElementById('aDiff').value);
+
+      const inputs = document.getElementById('aOptionsContainer').querySelectorAll('input');
+      const opts = Array.from(inputs).map(inp => inp.value.trim()).filter(Boolean);
+
+      if (!text) { toast('Soru metni zorunludur.'); return; }
+      if (opts.length < 2) { toast('En az 2 seçenek giriniz.'); return; }
+      if (!editId && !file) { toast('Yeni soru için X-Ray görseli zorunludur.'); return; }
+
+      let imagePath = document.getElementById('aEditImagePath').value;
+
+      // Görsel yükleme (yeni ekleme veya düzenlemede değiştirildiyse)
+      if (file) {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const path = `${crypto.randomUUID()}.${ext}`;
+        const up = await client.storage.from('xray-images').upload(path, file, { upsert: false });
+        if (up.error) { toast('Görsel yüklenemedi: ' + up.error.message); return; }
+        imagePath = path;
+      }
+
+      if (editId) {
+        // GÜNCELLEME — security definer RPC kullan
+        const r = await client.rpc('admin_update_question', {
+          p_question_id: editId,
+          p_text: text,
+          p_image_path: imagePath,
+          p_options: opts,
+          p_correct: correct,
+          p_difficulty: diff
+        });
+        if (r.error) { toast('Güncelleme hatası: ' + r.error.message); return; }
+        toast('Soru başarıyla güncellendi. ✓');
+      } else {
+        // YENİ EKLEME — security definer RPC kullan
+        const r = await client.rpc('admin_create_question', {
+          p_text: text,
+          p_image_path: imagePath,
+          p_options: opts,
+          p_correct: correct,
+          p_difficulty: diff
+        });
+        if (r.error) { toast('Soru kaydedilemedi: ' + r.error.message); return; }
+        toast('Soru başarıyla kaydedildi ve aktif sınava eklendi. ✓');
+      }
+
+      cancelQuestionEdit();
+      loadAdminQuestions();
+    }
+
+    async function loadAdminQuestions() {
+      const tbody = $('questionTableBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Yükleniyor...</td></tr>';
+      window.adminQuestionCache = {};
+
+      // Her zaman doğrudan DB'den çek — en güncel veri
+      const direct = await client.from('questions').select('*').eq('active', true).order('created_at', { ascending: false });
+      let data = null;
+      if (!direct.error && direct.data && direct.data.length > 0) {
+        data = direct.data;
+      } else {
+        // Fallback: RPC dene
+        const r = await client.rpc('admin_get_questions');
+        if (!r.error && Array.isArray(r.data) && r.data.length > 0) data = r.data;
+      }
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8">Henüz eklenmiş soru bulunamadı.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      data.forEach(q => {
+        let opts = q.options;
+        if (typeof opts === 'string') { try { opts = JSON.parse(opts); } catch(e) {} }
+        if (typeof opts === 'string') { try { opts = JSON.parse(opts); } catch(e) {} }
+        if (!Array.isArray(opts)) opts = [];
+
+        window.adminQuestionCache[q.id] = q;
+
+        const tr = document.createElement('tr');
+        const imgUrl = getImage(q.image_path);
+        const keys = ['A', 'B', 'C', 'D', 'E'];
+        tr.innerHTML = `
+          <td><img src="${imgUrl}" style="width:48px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1"></td>
+          <td style="max-width:200px;font-weight:600">${q.question_text}</td>
+          <td><span class="badge" style="background:#e2e8f0;color:#334155">Seviye ${q.difficulty}</span></td>
+          <td><b style="color:var(--green)">${keys[q.correct_option] || '?'}</b></td>
+          <td><span style="color:#64748b;font-size:12px">${opts.length} seçenek</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn light" style="padding:4px 8px;font-size:11px" onclick="editQuestion(window.adminQuestionCache['${q.id}'])">✏️ Düzenle</button>
+            <button class="btn red" style="padding:4px 8px;font-size:11px;margin-left:4px" onclick="deleteQuestion('${q.id}')">🗑️ Sil</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Soru silme — confirm() yerine modal
+    let _deleteQueueId = null;
+
+    function deleteQuestion(id) {
+      _deleteQueueId = id;
+      document.getElementById('deleteQuestionModal').classList.add('show');
+    }
+
+    function closeDeleteQuestionModal() {
+      _deleteQueueId = null;
+      document.getElementById('deleteQuestionModal').classList.remove('show');
+    }
+
+    async function confirmDeleteQuestion() {
+      const id = _deleteQueueId;
+      closeDeleteQuestionModal();
+      if (!id) return;
+
+      // Tamamen RPC üzerinden sil (security definer — RLS'i aşar)
+      const r = await client.rpc('admin_delete_question', { p_question_id: id });
+      if (r.error) {
+        toast('Silme hatası: ' + r.error.message);
+        return;
+      }
+
+      toast('Soru silindi. ✓');
+      if (window.adminQuestionCache) delete window.adminQuestionCache[id];
+      setTimeout(() => loadAdminQuestions(), 400);
+    }
+
+    /* ── PERSONEL YÖNETİMİ (Kullanıcı Tanımlama, Düzenleme, Silme & Arama) ── */
+    let lastPersonnelData = [];
+
+    async function loadPersonnelList() {
+      const tbody = $('personnelTableBody');
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Yükleniyor...</td></tr>';
+      const r = await client.rpc('admin_personnel');
+      if (r.error) {
+        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
+        return;
+      }
+      lastPersonnelData = r.data || [];
+      if ($('pCountBadge')) $('pCountBadge').textContent = `${lastPersonnelData.length} / 1000 Personel`;
+      renderPersonnelTable();
+    }
+
+    function renderPersonnelTable() {
+      const tbody = $('personnelTableBody');
+      const query = ($('pSearch') ? $('pSearch').value.trim() : '').toLowerCase();
+
+      let filtered = lastPersonnelData;
+      if (query) {
+        filtered = lastPersonnelData.filter(p => 
+          (p.employee_no && p.employee_no.toLowerCase().includes(query)) ||
+          (p.full_name && p.full_name.toLowerCase().includes(query)) ||
+          (p.airport && p.airport.toLowerCase().includes(query))
+        );
+      }
+
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8">Kayıtlı personel bulunamadı.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      filtered.forEach(p => {
+        const tr = document.createElement('tr');
+        const activeBadge = p.active ? '<span class="badge pass">Aktif</span>' : '<span class="badge fail">Pasif</span>';
+        tr.innerHTML = `
+          <td><b>${p.employee_no}</b></td>
+          <td>${p.full_name}</td>
+          <td>${p.airport || '-'}</td>
+          <td>${p.shift || '-'}</td>
+          <td>${activeBadge}</td>
+          <td style="white-space:nowrap">
+            <button class="btn light" style="padding:4px 8px;font-size:11px" onclick="editPersonnel('${p.id}')">✏️ Düzenle</button>
+            <button class="btn cyan" style="padding:4px 8px;font-size:11px" onclick="viewPersonnelExamHistory('${p.employee_no}')">📊 Sınavları</button>
+            <button class="btn red" style="padding:4px 8px;font-size:11px" onclick="deletePersonnel('${p.id}', '${p.full_name.replace(/'/g, "\\'")}')">🗑️ Sil</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function savePersonnel() {
+      const editId = $('pEditId').value;
+      const no = $('pNo').value.trim();
+      const name = $('pName').value.trim();
+      const pass = $('pPass').value;
+      const airport = $('pAirport').value.trim();
+      const shift = $('pShift').value.trim();
+      const active = $('pActive').value === 'true';
+
+      if (!no || !name) {
+        toast('Sicil No ve Ad Soyad alanları zorunludur.');
+        return;
+      }
+
+      if (!editId && !pass) {
+        toast('Yeni personel için giriş şifresi zorunludur.');
+        return;
+      }
+
+      if (editId) {
+        // Düzenleme İşlemi (Update)
+        const r = await client.rpc('admin_update_personnel', {
+          p_id: editId,
+          p_employee_no: no,
+          p_full_name: name,
+          p_airport: airport,
+          p_shift: shift,
+          p_password: pass || null,
+          p_active: active
+        });
+        if (r.error) {
+          toast('Güncelleme hatası: ' + r.error.message);
+          return;
+        }
+        toast('Personel bilgileri güncellendi. ✓');
+      } else {
+        // Oluşturma İşlemi (Create)
+        const r = await client.rpc('admin_create_personnel', {
+          p_employee_no: no,
+          p_full_name: name,
+          p_airport: airport,
+          p_shift: shift,
+          p_password: pass
+        });
+        if (r.error) {
+          toast('Oluşturma hatası: ' + r.error.message);
+          return;
+        }
+        toast('Yeni personel hesabı oluşturuldu. ✓');
+      }
+
+      resetPersonnelForm();
+      loadPersonnelList();
+    }
+
+    function editPersonnel(id) {
+      const p = lastPersonnelData.find(x => x.id === id);
+      if (!p) return;
+
+      $('pEditId').value = p.id;
+      $('pNo').value = p.employee_no || '';
+      $('pName').value = p.full_name || '';
+      $('pAirport').value = p.airport || '';
+      $('pShift').value = p.shift || '';
+      $('pPass').value = '';
+      $('pActive').value = p.active ? 'true' : 'false';
+
+      $('pFormTitle').textContent = '✏️ Personel Bilgilerini Düzenle';
+      $('pSubmitBtn').textContent = 'Değişiklikleri Kaydet';
+      $('pPassHint').textContent = '(Boş bırakılırsa mevcut şifre korunur)';
+      $('pCancelBtn').classList.remove('hidden');
+    }
+
+    function resetPersonnelForm() {
+      $('pEditId').value = '';
+      ['pNo', 'pName', 'pAirport', 'pShift', 'pPass'].forEach(id => $(id).value = '');
+      $('pActive').value = 'true';
+      $('pFormTitle').textContent = 'Yeni Personel Tanımla';
+      $('pSubmitBtn').textContent = 'Personel Hesabını Oluştur';
+      $('pPassHint').textContent = '(Zorunlu)';
+      $('pCancelBtn').classList.add('hidden');
+    }
+
+    /* ── TOPLU PERSONEL YÜKLEME (CSV) ── */
+
+    function downloadPersonnelTemplate() {
+      const header = 'sicil_no;ad_soyad;havalimani;vardiya;sifre';
+      const rows = [
+        'SEC2024001;Ahmet Yılmaz;Sabiha Gökçen;Gündüz A;1234',
+        'SEC2024002;Ayşe Kaya;İstanbul;Gece B;5678',
+        'SEC2024003;Mehmet Demir;Ankara Esenboğa;Gündüz C;',
+      ];
+      const csv = '\ufeff' + header + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'personel_sablonu.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('CSV şablonu indirildi.');
+    }
+
+    async function importPersonnelCSV() {
+      const fileInput = $('csvFile');
+      const resultEl = $('csvResult');
+
+      if (!fileInput.files[0]) {
+        toast('Lütfen bir CSV dosyası seçin.');
+        return;
+      }
+
+      const text = await fileInput.files[0].text();
+      // Satırlara böl, boş satırları atla
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) {
+        toast('CSV dosyası boş veya hatalı.');
+        return;
+      }
+
+      // Başlık satırını atla, ayırıcı ; veya , veya tab
+      const sep = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
+      const dataLines = lines.slice(1);
+
+      resultEl.style.display = 'block';
+      resultEl.innerHTML = `<div style="color:#3b82f6;font-weight:600">⏳ ${dataLines.length} satır işleniyor...</div>`;
+
+      let success = 0, skipped = 0, errors = [];
+
+      for (let i = 0; i < dataLines.length; i++) {
+        const cols = dataLines[i].split(sep).map(c => c.trim().replace(/^"|"$/g, ''));
+        const [sicil, adSoyad, havalimani, vardiya, sifre] = cols;
+
+        if (!sicil || !adSoyad) {
+          errors.push(`Satır ${i + 2}: Sicil veya Ad Soyad eksik — "${dataLines[i]}"`);
+          skipped++;
+          continue;
+        }
+
+        const password = (sifre && sifre.trim()) ? sifre.trim() : sicil;
+
+        const r = await client.rpc('admin_create_personnel', {
+          p_employee_no: sicil,
+          p_full_name:   adSoyad,
+          p_airport:     havalimani || '',
+          p_shift:       vardiya || '',
+          p_password:    password
+        });
+
+        if (r.error) {
+          // Zaten kayıtlıysa atla, başka hataysa raporla
+          if (r.error.message && r.error.message.includes('unique')) {
+            errors.push(`Satır ${i + 2}: "${sicil}" zaten kayıtlı — atlandı.`);
+          } else {
+            errors.push(`Satır ${i + 2}: ${sicil} — ${r.error.message}`);
+          }
+          skipped++;
+        } else {
+          success++;
+        }
+
+        // Her 10 kayıtta ilerleme güncelle
+        if ((i + 1) % 10 === 0) {
+          resultEl.innerHTML = `<div style="color:#3b82f6;font-weight:600">⏳ ${i + 1} / ${dataLines.length} işlendi...</div>`;
+        }
+      }
+
+      // Sonuç özeti
+      let html = `
+        <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:12px;margin-bottom:8px">
+          <div style="color:#15803d;font-weight:700;font-size:14px">✅ ${success} personel başarıyla eklendi.</div>
+          ${skipped > 0 ? `<div style="color:#92400e;font-weight:600;margin-top:4px">⚠️ ${skipped} satır atlandı.</div>` : ''}
+        </div>
+      `;
+      if (errors.length > 0) {
+        html += `<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:10px;max-height:140px;overflow-y:auto">
+          <div style="color:#b91c1c;font-weight:700;margin-bottom:6px">Hata / Uyarı Detayları:</div>
+          ${errors.map(e => `<div style="font-size:11px;color:#7f1d1d;margin-bottom:2px">• ${e}</div>`).join('')}
+        </div>`;
+      }
+      resultEl.innerHTML = html;
+
+      if (success > 0) {
+        fileInput.value = '';
+        loadPersonnelList();
+        toast(`${success} personel eklendi. ✓`);
+      }
+    }
+
+    async function deletePersonnel(id, name) {
+      if (!confirm(`${name} isimli personeli ve hesabını silmek istediğinize emin misiniz?`)) return;
+
+      const r = await client.rpc('admin_delete_personnel', { p_id: id });
+      if (r.error) {
+        toast('Silme hatası: ' + r.error.message);
+        return;
+      }
+      toast('Personel silindi.');
+      loadPersonnelList();
+    }
+
+    function viewPersonnelExamHistory(employeeNo) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+
+      const tab3Btn = document.querySelectorAll('.tab-btn')[2];
+      if (tab3Btn) tab3Btn.classList.add('active');
+      $('tab-results').classList.remove('hidden');
+
+      if ($('rSearch')) $('rSearch').value = employeeNo;
+      renderResultsTable();
+    }
+
+    /* ── SONUÇLAR VE İSTATİSTİKLER (Arama ve Filtreleme) ── */
+    let lastResultsData = [];
+
+    async function loadResults() {
+      const tbody = $('results');
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center">Yükleniyor...</td></tr>';
+      const r = await client.rpc('admin_results');
+      if (r.error) {
+        tbody.innerHTML = `<tr><td colspan="9" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
+        return;
+      }
+
+      lastResultsData = r.data || [];
+      const total = lastResultsData.length;
+      const passed = lastResultsData.filter(x => x.passed).length;
+      const avgScore = total > 0
+        ? (lastResultsData.reduce((a, b) => a + (Number(b.score) || 0), 0) / total).toFixed(1)
+        : 0;
+      const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+
+      $('statTotal').textContent       = total;
+      $('statPassRate').textContent    = passRate + '%';
+      $('statAvgScore').textContent    = avgScore;
+      $('statPassedCount').textContent = passed;
+
+      renderResultsTable();
+    }
+
+    function renderResultsTable() {
+      const tbody = $('results');
+      const query = ($('rSearch') ? $('rSearch').value.trim() : '').toLowerCase();
+
+      let filtered = lastResultsData;
+      if (query) {
+        filtered = lastResultsData.filter(x =>
+          (x.full_name   && x.full_name.toLowerCase().includes(query)) ||
+          (x.employee_no && x.employee_no.toLowerCase().includes(query)) ||
+          (x.airport     && x.airport.toLowerCase().includes(query))
+        );
+      }
+
+      if (!filtered || filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#94a3b8">Sınav sonucu bulunamadı.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      filtered.forEach(x => {
+        const correct  = x.correct_count  ?? 0;
+        const answered = x.answered_count ?? 0;
+        const wrong    = answered - correct;
+        const total    = x.total_count ?? answered; // RPC'den geliyorsa
+        const empty    = total > answered ? total - answered : 0;
+
+        // Her soru 2 puan
+        const earnedScore = correct * 2;
+        const scoreVal    = x.score !== null ? Number(x.score).toFixed(1) : '-';
+        const isPass      = x.passed;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><b>${x.full_name}</b></td>
+          <td>${x.employee_no}</td>
+          <td>${x.airport || '-'}</td>
+          <td style="color:var(--green);font-weight:700">${correct}</td>
+          <td style="color:var(--red);font-weight:700">${wrong}</td>
+          <td style="color:#f59e0b;font-weight:700">${empty > 0 ? empty : '-'}</td>
+          <td><b style="font-size:14px">${earnedScore} puan</b> <span style="color:#64748b;font-size:11px">(${scoreVal}/100)</span></td>
+          <td><span class="badge ${isPass ? 'pass' : 'fail'}">${isPass ? '✅ BAŞARILI' : (x.status === 'expired' ? '⏱ SÜRE DOLDU' : '❌ BAŞARISIZ')}</span></td>
+          <td style="font-size:11px">${x.finished_at ? new Date(x.finished_at).toLocaleString('tr-TR') : '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function exportResultsCSV() {
+      if (!lastResultsData || lastResultsData.length === 0) {
+        toast('İndirilecek veri yok.');
+        return;
+      }
+      let csv = 'Personel;Sicil;Havalimani;Dogru;Yanlis;Puan;Yuzdesi;Durum;Tarih\n';
+      lastResultsData.forEach(x => {
+        const correct  = x.correct_count  ?? 0;
+        const answered = x.answered_count ?? 0;
+        const wrong    = answered - correct;
+        const earned   = correct * 2;
+        csv += `"${x.full_name}";"${x.employee_no}";"${x.airport || ''}";${correct};${wrong};${earned};${x.score || 0};"${x.passed ? 'BASARILI' : 'BASARISIZ'}";"${x.finished_at ? new Date(x.finished_at).toLocaleString('tr-TR') : ''}"\n`;
+      });
+
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `TPS_Sinav_Sonuclari_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('CSV dosyası indirildi. ✓');
+    }
+  </script>
+</body>
+</html>
