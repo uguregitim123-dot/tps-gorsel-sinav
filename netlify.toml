@@ -2,6 +2,64 @@
   publish = "."
   command = ""
 
+[build.environment]
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
+  DISABLE_FRAMEWORK_DETECTION = "true"
+
+[[redirects]]
+  from = "/*.js"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.css"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.map"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.ts"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.tsx"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.woff"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.woff2"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/@vite/*"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/@id/*"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
@@ -10,7 +68,8 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    X-Frame-Options = "DENY"
+    X-Frame-Options = "SAMEORIGIN"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    Cache-Control = "public, max-age=0, must-revalidate"
