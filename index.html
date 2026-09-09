@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <title>TPS Görsel Sınav Sistemi - X-Ray Simülasyonu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -890,18 +890,43 @@
       align-items: center;
       justify-content: center;
       z-index: 90;
-      backdrop-filter: blur(5deg);
+      backdrop-filter: blur(4px);
     }
     .modal.show { display: flex; }
     .modal .card { text-align: center; max-width: 420px; }
 
     @media (max-width: 960px) {
-      .app { grid-template-columns: 70px 1fr; }
+      .app { grid-template-columns: 70px 1fr; height: calc(100dvh - 48px); }
       .right { display: none; }
+      .main { grid-template-rows: 32px 1fr minmax(120px, auto); }
+      .qbox { padding: 6px 8px; overflow: auto; }
+      .answers { grid-template-columns: 1fr; }
       .admin-grid { grid-template-columns: 1fr; }
       .stat-grid { grid-template-columns: 1fr 1fr; }
       .result-stats-grid { grid-template-columns: 1fr 1fr; }
       .review-options { grid-template-columns: 1fr; }
+      .login { min-height: 100dvh; padding: 12px; }
+      .card { padding: 20px; }
+      .xwrap img { max-width: 94vw; max-height: 44dvh; }
+      .top { padding: 0 8px; gap: 8px; height: 44px; }
+      .timer { padding: 4px 8px; font-size: 12px; }
+      .user { font-size: 10px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .brand { font-size: 11px; }
+      .head { padding: 6px 10px; font-size: 11px; }
+      .side { width: 70px; padding: 6px 2px; gap: 4px; }
+      .tool { width: 62px; height: 40px; }
+      button, .btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      .top h1 { font-size: 11px; }
+    }
+
+    @media (max-width: 520px) {
+      .top h1 { display: none; }
+      .app { grid-template-columns: 62px 1fr; }
+      .side { width: 62px; }
+      .tool { width: 56px; height: 38px; font-size: 10px; }
+      .xwrap img { max-width: 92vw; max-height: 38dvh; }
+      .res-card { padding: 10px; }
+      .stat-card { padding: 10px; }
     }
   </style>
 </head>
