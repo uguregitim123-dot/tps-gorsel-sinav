@@ -895,8 +895,35 @@
     .modal.show { display: flex; }
     .modal .card { text-align: center; max-width: 420px; }
 
+    .sidebar-toggle {
+      display: none;
+      padding: 4px 10px;
+      font-size: 18px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      color: #fff;
+      border-radius: 8px;
+      line-height: 1;
+    }
+    .sidebar-toggle:hover { background: rgba(255,255,255,0.16); }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 49;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .sidebar-overlay.show {
+      display: block;
+      opacity: 1;
+    }
+
     @media (max-width: 960px) {
-      .app { grid-template-columns: 70px 1fr; height: calc(100dvh - 48px); }
+      .sidebar-toggle { display: inline-flex; align-items: center; justify-content: center; }
+      .app { grid-template-columns: 1fr; height: calc(100dvh - 44px); position: relative; }
       .right { display: none; }
       .main { grid-template-rows: 32px 1fr minmax(120px, auto); }
       .qbox { padding: 6px 8px; overflow: auto; }
@@ -908,22 +935,37 @@
       .login { min-height: 100dvh; padding: 12px; }
       .card { padding: 20px; }
       .xwrap img { max-width: 94vw; max-height: 44dvh; }
-      .top { padding: 0 8px; gap: 8px; height: 44px; }
+      .top { padding: 0 8px; gap: 6px; height: 44px; }
       .timer { padding: 4px 8px; font-size: 12px; }
-      .user { font-size: 10px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .user { font-size: 10px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .brand { font-size: 11px; }
       .head { padding: 6px 10px; font-size: 11px; }
-      .side { width: 70px; padding: 6px 2px; gap: 4px; }
-      .tool { width: 62px; height: 40px; }
+      .side {
+        width: 76px;
+        padding: 6px 2px;
+        gap: 4px;
+        position: fixed;
+        top: 44px;
+        left: 0;
+        height: calc(100dvh - 44px);
+        z-index: 50;
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+        border-right: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 4px 0 18px rgba(0,0,0,0.45);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+      .side.show { transform: translateX(0); }
+      .tool { width: 66px; height: 40px; }
       button, .btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-      .top h1 { font-size: 11px; }
+      .top h1 { display: none; }
     }
 
     @media (max-width: 520px) {
       .top h1 { display: none; }
-      .app { grid-template-columns: 62px 1fr; }
-      .side { width: 62px; }
-      .tool { width: 56px; height: 38px; font-size: 10px; }
+      .side { width: 70px; }
+      .tool { width: 60px; height: 38px; font-size: 10px; }
       .xwrap img { max-width: 92vw; max-height: 38dvh; }
       .res-card { padding: 10px; }
       .stat-card { padding: 10px; }
@@ -980,6 +1022,7 @@
   <!-- SINAV EKRANI -->
   <div id="examScreen" class="hidden">
     <header class="top">
+      <button id="sidebarToggle" class="btn sidebar-toggle" aria-label="Filtreleri Aç/Kapat" onclick="toggleSidebar()">☰</button>
       <div class="brand">🛡 TPS SİMÜLATÖRÜ <span class="brand-badge">CANLI SINAV</span></div>
       <h1>Uygulamalı Görüntü Yorumlama Prosedürleri</h1>
       <div class="user" id="personName"></div>
@@ -989,7 +1032,8 @@
 
     <div class="app">
       <!-- SOL ARAÇ ÇUBUĞU (X-RAY MODLARI) -->
-      <aside class="side">
+      <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+      <aside id="sidebar" class="side">
         <small>FİLTRELER</small>
         <button class="tool active" id="btn-NORMAL" onclick="mode('NORMAL')" title="Normal Görüntü (N)">
           <span class="pill" style="background:#334155">NORM</span>
@@ -1778,6 +1822,8 @@
       const activeBtn = $('btn-' + n);
       if (activeBtn) activeBtn.classList.add('active');
 
+      if (window.innerWidth <= 960) toggleSidebar(false);
+
       const modeTitles = {
         'NORMAL': 'Normal Görüntü',
         'NEG': 'Negatif (Invert)',
@@ -1891,6 +1937,25 @@
       else if (k.toLowerCase() === 'r') resetView();
       else if (k === '+' || k === '=') zoom(0.15);
       else if (k === '-') zoom(-0.15);
+    });
+
+    /* ── MOBİL SIDEBAR AÇ/KAPA ── */
+    function toggleSidebar(force) {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      const toggleBtn = document.getElementById('sidebarToggle');
+      if (!sidebar) return;
+      const open = typeof force === 'boolean' ? force : !sidebar.classList.contains('show');
+      sidebar.classList.toggle('show', open);
+      if (overlay) overlay.classList.toggle('show', open);
+      if (toggleBtn) toggleBtn.textContent = open ? '✕' : '☰';
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar && sidebar.classList.contains('show')) toggleSidebar(false);
+      }
     });
 
     /* ── SINAV BİTİRME & SONUÇ ÖZETİ ── */
