@@ -65,10 +65,22 @@
     Referrer-Policy = "no-referrer-when-downgrade"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     Strict-Transport-Security = "max-age=86400; includeSubDomains"
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "no-store, no-cache, must-revalidate, private, proxy-revalidate, max-age=0, s-maxage=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Surrogate-Control = "no-store, private, max-age=0"
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
     Access-Control-Allow-Headers = "*"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, private, proxy-revalidate, max-age=0, s-maxage=0"
+    Pragma = "no-cache"
+    Expires = "0"
+    Surrogate-Control = "no-store, private, max-age=0"
+    Clear-Site-Data = "\"cache\""
 
 [[headers]]
   for = "/@vite/*"
