@@ -1658,14 +1658,17 @@
         }
         attemptId = a.data;
 
-      $('loginScreen').classList.add('hidden');
-      $('examScreen').classList.remove('hidden');
-      $('personName').textContent = `👤 ${personnel.full_name} (${personnel.employee_no})`;
+        $('loginScreen').classList.add('hidden');
+        $('examScreen').classList.remove('hidden');
+        $('personName').textContent = `👤 ${personnel.full_name} (${personnel.employee_no})`;
 
-      buildList();
-      render();
-      timerId = setInterval(tick, 1000);
-      resetQTimer();
+        buildList();
+        render();
+        timerId = setInterval(tick, 1000);
+        resetQTimer();
+      } catch (startErr) {
+        $('loginMsg').textContent = 'Sınav başlatılırken bağlantı hatası: ' + (startErr && startErr.message ? startErr.message : startErr) + ' — Lütfen Wi-Fi ağına geçin.';
+      }
     }
 
     /* ── SINAV VE SORU ZAMANLAYICILARI ── */
