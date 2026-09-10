@@ -1,0 +1,11 @@
+node_modules
+.git
+.github
+*.log
+.DS_Store
+_redirects
+netlify.toml
+@vite
+tps-gorsel-sinav
+tps_gorsel_proje
+vercel.json.bak
