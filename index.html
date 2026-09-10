@@ -3,7 +3,56 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self';">
   <title>TPS Görsel Sınav Sistemi - X-Ray Simülasyonu</title>
+  <script>
+  (function(){
+    var BLOCK = /@vite|@id|\.netlify\/scripts|\/node_modules\//i;
+    function block(u){ return !!u && BLOCK.test(u); }
+    var mo = new MutationObserver(function(m){
+      for(var i=0;i<m.length;i++){
+        var nodes = m[i].addedNodes;
+        for(var j=0;j<nodes.length;j++){
+          var el = nodes[j];
+          if(el && el.tagName){
+            var tag = el.tagName.toLowerCase();
+            if(tag === 'script'){
+              if(block(el.src) || block(el.getAttribute('src'))){
+                try { el.setAttribute('src', ''); el.removeAttribute('src'); el.parentNode && el.parentNode.removeChild(el); } catch(e){}
+              }
+            } else if(tag === 'link' && el.rel && el.rel.toLowerCase() === 'prefetch'){
+              if(block(el.href) || block(el.getAttribute('href'))){
+                try { el.parentNode && el.parentNode.removeChild(el); } catch(e){}
+              }
+            }
+          }
+        }
+      }
+    });
+    if(document.documentElement){
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+    }
+    document.addEventListener('DOMContentLoaded', function(){ try { mo.disconnect(); } catch(e){} }, { once: true });
+    var _ce = document.createElement.bind(document);
+    document.createElement = function(t){
+      var n = _ce(t);
+      if(typeof t === 'string' && t.toLowerCase() === 'script'){
+        try {
+          var desc = Object.getOwnPropertyDescriptor(HTMLScriptElement.prototype, 'src') || {};
+          Object.defineProperty(n, 'src', {
+            get: function(){ return desc.get ? desc.get.call(this) : this.getAttribute('src') || ''; },
+            set: function(v){
+              if(block(v)){ try { this.setAttribute('src', ''); } catch(e){} return false; }
+              desc.set ? desc.set.call(this, v) : this.setAttribute('src', v);
+            },
+            configurable: true
+          });
+        } catch(e){}
+      }
+      return n;
+    };
+  })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
