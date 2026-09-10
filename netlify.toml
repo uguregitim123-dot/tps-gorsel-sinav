@@ -7,43 +7,7 @@
   DISABLE_FRAMEWORK_DETECTION = "true"
 
 [[redirects]]
-  from = "/*.js"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/*.css"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/*.map"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/*.ts"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/*.tsx"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/*.woff"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/*.woff2"
+  from = "/.netlify/scripts/*"
   to = "/404-not-found-static"
   status = 404
   force = true
@@ -61,6 +25,43 @@
   force = true
 
 [[redirects]]
+  from = "/*.js"
+  to = "/404-not-found-static"
+  status = 404
+
+[[redirects]]
+  from = "/*.css"
+  to = "/404-not-found-static"
+  status = 404
+
+[[redirects]]
+  from = "/*.map"
+  to = "/404-not-found-static"
+  status = 404
+
+[[redirects]]
+  from = "/*.ts"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.tsx"
+  to = "/404-not-found-static"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/*.woff"
+  to = "/404-not-found-static"
+  status = 404
+
+[[redirects]]
+  from = "/*.woff2"
+  to = "/404-not-found-static"
+  status = 404
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
@@ -72,4 +73,16 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/@vite/*"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
+    Cache-Control = "no-store"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Content-Type = "application/javascript; charset=utf-8"
