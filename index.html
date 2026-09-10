@@ -1500,25 +1500,12 @@
 
     document.addEventListener('DOMContentLoaded', function() {
       setTimeout(function() {
+        if (typeof setNetStatus !== 'function') return;
         setNetStatus('info', '🌐 Bağlantı kontrol ediliyor...', 'Sunucuya bağlantı sağlanıyor, lütfen bekleyin.');
-        probeNetwork();
-        window.setInterval(function() {
-          if (!$('loginScreen') || $('loginScreen').classList.contains('hidden')) return;
-          probeNetwork();
-        }, 22000);
+        if (typeof probeNetwork === 'function') probeNetwork();
       }, 350);
     });
 
-    (function fallbackNetCheck() {
-      try {
-        if (document.getElementById('netStatus')) {
-          setNetStatus('info', '🌐 Bağlantı kontrol ediliyor...', 'Sunucuya bağlantı sağlanıyor, lütfen bekleyin.');
-          setTimeout(probeNetwork, 450);
-        } else {
-          setTimeout(fallbackNetCheck, 200);
-        }
-      } catch (_) {}
-    })();
     
     let personnel = null;
     let exam = null;
@@ -2926,6 +2913,32 @@
       URL.revokeObjectURL(url);
       toast('CSV dosyası indirildi. ✓');
     }
+
+    /* ── Ağ / Bağlantı Testini Başlat (Script sonu, tum fonksiyonlar tanimlandiktan sonra) ── */
+    (function startNetChecks() {
+      function waitAndRun(attempt) {
+        if (!document.getElementById('netStatus')) {
+          if (attempt < 50) setTimeout(function(){ waitAndRun(attempt + 1); }, 60);
+          return;
+        }
+        try {
+          setNetStatus('info', '🌐 Bağlantı kontrol ediliyor...', 'Sunucuya bağlantı sağlanıyor, lütfen bekleyin.');
+          probeNetwork();
+          window.setInterval(function() {
+            if (!$('loginScreen') || $('loginScreen').classList.contains('hidden')) return;
+            try { probeNetwork(); } catch(_) {}
+          }, 22000);
+        } catch (err) {
+          try { setNetStatus('warn', 'Bağlantı testi çalıştırılamadı', 'Lütfen giriş yapmayı deneyin, sorun yaşarsanız Wi-Fi ağına geçin.'); } catch(_) {}
+        }
+      }
+      waitAndRun(0);
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { setTimeout(function(){ waitAndRun(999); }, 300); });
+      } else {
+        setTimeout(function(){ waitAndRun(999); }, 300);
+      }
+    })();
   </script>
 </body>
 </html>
