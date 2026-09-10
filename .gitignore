@@ -1,2 +1,5 @@
-config.example.js
+﻿tps-gorsel-sinav/
+tps_gorsel_proje/
 node_modules/
+.DS_Store
+*.log
