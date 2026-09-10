@@ -62,13 +62,13 @@
   for = "/*"
   [headers.values]
     X-Frame-Options = "SAMEORIGIN"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
+    Referrer-Policy = "no-referrer-when-downgrade"
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
-    Strict-Transport-Security = "max-age=31536000; includeSubDomains"
+    Strict-Transport-Security = "max-age=86400; includeSubDomains"
     Cache-Control = "public, max-age=0, must-revalidate"
-    Content-Security-Policy = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline' data:; img-src * data: blob:; font-src * data:; connect-src * data: blob:; media-src * data: blob:; worker-src * data: blob:; manifest-src * data:; frame-src * data: blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
     Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "*"
 
 [[headers]]
   for = "/@vite/*"

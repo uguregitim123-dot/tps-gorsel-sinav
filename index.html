@@ -980,6 +980,11 @@
       <div class="brand">🛡 GÜVENLİK SİMÜLASYONU <span class="brand-badge">SHGM / TPS v2.0</span></div>
       <h2>TPS Görsel Sınav Sistemi</h2>
       <p class="muted">Uygulamalı X-Ray Görüntü Yorumlama ve Tehdit Tespit Prosedürleri</p>
+
+      <div id="netStatus" style="display:none;margin:10px 0 14px;padding:12px;border-radius:10px;font-size:13px;line-height:1.5;border:1px solid;">
+        <div id="netStatusTitle" style="font-weight:700;margin-bottom:4px"></div>
+        <div id="netStatusDesc" style="opacity:.85"></div>
+      </div>
       
       <div class="field">
         <label>Personel Sicil / ID No</label>
@@ -989,7 +994,7 @@
         <label>Şifre</label>
         <input id="loginPass" type="password" placeholder="••••••••">
       </div>
-      <button class="btn green" style="width:100%" onclick="personnelLogin()">Personel Girişi Yap</button>
+      <button id="loginBtnPersonnel" class="btn green" style="width:100%" onclick="personnelLogin()">Personel Girişi Yap</button>
       
       <hr style="border:0;border-top:1px solid #e2e8f0;margin:20px 0">
       
@@ -1484,7 +1489,25 @@
 
   <!-- UYGULAMA MANTIĞI VE JAVASCRIPT -->
   <script>
-    const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    if (window.SUPABASE_ANON_KEY && !window.SUPABASE_ANON) window.SUPABASE_ANON = window.SUPABASE_ANON_KEY;
+    const client = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true },
+      global: {
+        headers: { apikey: window.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + window.SUPABASE_ANON_KEY },
+        fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' })
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        setNetStatus('info', '🌐 Bağlantı kontrol ediliyor...', 'Sunucuya bağlantı sağlanıyor, lütfen bekleyin.');
+        probeNetwork();
+        window.setInterval(function() {
+          if (!$('loginScreen') || $('loginScreen').classList.contains('hidden')) return;
+          probeNetwork();
+        }, 22000);
+      }, 350);
+    });
     
     let personnel = null;
     let exam = null;
@@ -1512,6 +1535,64 @@
 
     const $ = id => document.getElementById(id);
 
+    function setNetStatus(kind, title, desc) {
+      const box = $('netStatus');
+      if (!box) return;
+      const colors = {
+        ok:   '#10b981',
+        warn: '#f59e0b',
+        bad:  '#ef4444',
+        info: '#3b82f6'
+      };
+      const bg = {
+        ok:   'rgba(16,185,129,.09)',
+        warn: 'rgba(245,158,11,.10)',
+        bad:  'rgba(239,68,68,.10)',
+        info: 'rgba(59,130,246,.10)'
+      };
+      box.style.display = (kind === 'hide' ? 'none' : 'block');
+      box.style.color = colors[kind] || '#111';
+      box.style.background = bg[kind] || '#fff';
+      box.style.borderColor = colors[kind] || '#ccc';
+      $('netStatusTitle').textContent = title || '';
+      $('netStatusDesc').textContent = desc || '';
+    }
+
+    async function probeNetwork() {
+      try {
+        const host = (window.SUPABASE_URL || 'https://exdbxjxswyftclvfbqla.supabase.co').replace(/\/$/, '');
+        const start = Date.now();
+        const ac = new AbortController();
+        const to = setTimeout(() => ac.abort(), 6000);
+        let ok = false;
+        let msg = '';
+        try {
+          const res = await fetch(host + '/auth/v1/settings?apikey=' + encodeURIComponent(window.SUPABASE_ANON || ''), {
+            method: 'GET', signal: ac.signal, mode: 'cors', cache: 'no-store'
+          });
+          clearTimeout(to);
+          const ms = Date.now() - start;
+          if (res.status >= 200 && res.status < 500) {
+            ok = true;
+            msg = 'Sunucuya bağlantı ' + ms + 'ms — her şey yolunda.';
+          } else {
+            msg = 'Sunucu yanıt kodu ' + res.status + '.';
+          }
+        } catch (err) {
+          clearTimeout(to);
+          msg = (err && err.name === 'AbortError') ? 'Bağlantı zaman aşımına uğradı (6sn).' :
+                (err && err.message ? err.message : String(err));
+        }
+        if (ok) {
+          setNetStatus('ok', '✅ Bağlantı Hazır', msg);
+        } else {
+          setNetStatus('bad',
+            '📡 HÜCRESEL VERİ (4G / 5G) ÜZERİNDE BAĞLANTI SORUNU',
+            'Hata: ' + msg + '\n\nÇözüm önerileri:\n1. Wi-Fi (kablosuz ağ) bağlantısına geçin.\n2. Operatör ayarlarından "Özel DNS / Private DNS" kapatın veya Google DNS (8.8.8.8) kullanın.\n3. Mobil veriyi kapatıp açın (uçak modu 10 sn).\n4. Tarayıcınızda “Güvenli DNS / Use Secure DNS” ayarını kapatın.');
+        }
+      } catch (e) {}
+    }
+
     function toast(t) {
       const el = $('toast');
       el.textContent = t;
@@ -1538,39 +1619,46 @@
         return;
       }
       $('loginMsg').textContent = 'Giriş kontrol ediliyor...';
-      const { data, error } = await client.rpc('personnel_login', { p_employee_no: no, p_password: pass });
-      if (error || !data || data.length === 0) {
-        $('loginMsg').textContent = 'Giriş başarısız. Sicil veya şifre hatalı.';
-        return;
+      try {
+        const { data, error } = await client.rpc('personnel_login', { p_employee_no: no, p_password: pass });
+        if (error || !data || data.length === 0) {
+          $('loginMsg').textContent = (error && error.message && (error.message.includes('Failed') || error.message.includes('fetch') || error.code === 'ETIMEDOUT'))
+            ? 'Bağlantı kurulamadı. Lütfen Wi-Fi ağına geçin veya önerilerimizi deneyin.'
+            : 'Giriş başarısız. Sicil veya şifre hatalı.';
+          return;
+        }
+        personnel = data[0];
+        await startExam();
+      } catch (err) {
+        $('loginMsg').textContent = 'Bağlantı hatası: ' + (err && err.message ? err.message : err) + ' — Wi-Fi ağına geçin.';
       }
-      personnel = data[0];
-      await startExam();
     }
 
     /* ── SINAV BAŞLATMA ── */
     async function startExam() {
-      const r = await client.rpc('get_active_exam');
-      if (r.error || !r.data) {
-        $('loginMsg').textContent = 'Aktif sınav bulunamadı. Lütfen yöneticiye başvurun.';
-        return;
-      }
-      exam = r.data.exam;
-      questions = r.data.questions;
+      try {
+        const r = await client.rpc('get_active_exam');
+        if (r.error || !r.data) {
+          $('loginMsg').textContent = 'Aktif sınav bulunamadı veya bağlantı hatası. Lütfen yöneticiye başvurun veya Wi-Fi ağına geçin.';
+          return;
+        }
+        exam = r.data.exam;
+        questions = r.data.questions;
 
-      if (!questions || questions.length === 0) {
-        $('loginMsg').textContent = 'Sınav için hazırlanmış soru bulunamadı.';
-        return;
-      }
+        if (!questions || questions.length === 0) {
+          $('loginMsg').textContent = 'Sınav için hazırlanmış soru bulunamadı.';
+          return;
+        }
 
-      answers = questions.map(() => ({ selected: null, x: null, y: null }));
-      seconds = exam.duration_seconds || 1200;
+        answers = questions.map(() => ({ selected: null, x: null, y: null }));
+        seconds = exam.duration_seconds || 1200;
 
-      const a = await client.rpc('start_attempt', { p_exam_id: exam.id, p_personnel_id: personnel.id });
-      if (a.error) {
-        $('loginMsg').textContent = 'Sınav oturumu başlatılamadı: ' + a.error.message;
-        return;
-      }
-      attemptId = a.data;
+        const a = await client.rpc('start_attempt', { p_exam_id: exam.id, p_personnel_id: personnel.id });
+        if (a.error) {
+          $('loginMsg').textContent = 'Sınav oturumu başlatılamadı: ' + a.error.message + ' (Wi-Fi ağına geçin)';
+          return;
+        }
+        attemptId = a.data;
 
       $('loginScreen').classList.add('hidden');
       $('examScreen').classList.remove('hidden');
