@@ -7,22 +7,14 @@
   DISABLE_FRAMEWORK_DETECTION = "true"
 
 [[redirects]]
-  from = "/.netlify/scripts/*"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
-
-[[redirects]]
   from = "/@vite/*"
-  to = "/404-not-found-static"
-  status = 404
-  force = true
+  to = "/@vite/client"
+  status = 200
 
 [[redirects]]
   from = "/@id/*"
   to = "/404-not-found-static"
   status = 404
-  force = true
 
 [[redirects]]
   from = "/*.js"
@@ -75,6 +67,7 @@
     Permissions-Policy = "geolocation=(), microphone=(), camera=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains"
     Cache-Control = "public, max-age=0, must-revalidate"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://*.supabase.co; frame-ancestors 'self'; base-uri 'self'; form-action 'self';"
 
 [[headers]]
   for = "/@vite/*"
