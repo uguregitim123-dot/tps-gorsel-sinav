@@ -1508,6 +1508,17 @@
         }, 22000);
       }, 350);
     });
+
+    (function fallbackNetCheck() {
+      try {
+        if (document.getElementById('netStatus')) {
+          setNetStatus('info', '🌐 Bağlantı kontrol ediliyor...', 'Sunucuya bağlantı sağlanıyor, lütfen bekleyin.');
+          setTimeout(probeNetwork, 450);
+        } else {
+          setTimeout(fallbackNetCheck, 200);
+        }
+      } catch (_) {}
+    })();
     
     let personnel = null;
     let exam = null;
