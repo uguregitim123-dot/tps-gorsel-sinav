@@ -2816,6 +2816,15 @@
     /* ── PERSONEL YÖNETİMİ (Kullanıcı Tanımlama, Düzenleme, Silme & Arama) ── */
     let lastPersonnelData = [];
 
+    function trNorm(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/İ/g, 'i').replace(/I/g, 'ı')
+        .replace(/Ğ/g, 'ğ').replace(/Ü/g, 'ü')
+        .replace(/Ş/g, 'ş').replace(/Ö/g, 'ö').replace(/Ç/g, 'ç')
+        .toLowerCase();
+    }
+
     async function loadPersonnelList() {
       const tbody = $('personnelTableBody');
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Yükleniyor...</td></tr>';
@@ -2831,14 +2840,15 @@
 
     function renderPersonnelTable() {
       const tbody = $('personnelTableBody');
-      const query = ($('pSearch') ? $('pSearch').value.trim() : '').toLowerCase();
+      const query = trNorm($('pSearch') ? $('pSearch').value.trim() : '');
 
       let filtered = lastPersonnelData;
       if (query) {
         filtered = lastPersonnelData.filter(p => 
-          (p.employee_no && p.employee_no.toLowerCase().includes(query)) ||
-          (p.full_name && p.full_name.toLowerCase().includes(query)) ||
-          (p.airport && p.airport.toLowerCase().includes(query))
+          trNorm(p.employee_no).includes(query) ||
+          trNorm(p.full_name).includes(query) ||
+          trNorm(p.airport).includes(query) ||
+          trNorm(p.shift).includes(query)
         );
       }
 
