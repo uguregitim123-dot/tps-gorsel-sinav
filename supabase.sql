@@ -163,26 +163,98 @@ end $$;
 revoke all on function save_answer(uuid,uuid,integer,numeric,numeric) from public;
 grant execute on function save_answer(uuid,uuid,integer,numeric,numeric) to anon,authenticated;
 
--- Puanı sunucu tarafında hesaplar.
-create or replace function finish_attempt(p_attempt_id uuid,p_status text default 'finished')
+-- Puanı sunucu tarafında hesaplar (kolon adı çakışması önlendi, parametre desteği eklendi).
+drop function if exists finish_attempt(uuid, text);
+drop function if exists finish_attempt(uuid);
+drop function if exists finish_attempt(uuid, text, numeric, integer, integer, integer, boolean);
+
+create or replace function finish_attempt(
+  p_attempt_id uuid,
+  p_status text default 'finished',
+  p_score numeric default null,
+  p_correct_count integer default null,
+  p_answered_count integer default null,
+  p_total_count integer default null,
+  p_passed boolean default null
+)
 returns jsonb language plpgsql security definer set search_path=public
 as $$
-declare total int; answered int; correct int; score numeric; passscore numeric; passed boolean; eid uuid;
+declare
+  v_total int;
+  v_answered int;
+  v_correct int;
+  v_score numeric;
+  v_passscore numeric;
+  v_passed boolean;
+  v_eid uuid;
 begin
- select exam_id into eid from attempts where id=p_attempt_id;
- select count(*) into total from exam_questions where exam_id=eid;
- select count(*) into answered from attempt_answers where attempt_id=p_attempt_id and selected_option is not null;
- select count(*) into correct
- from attempt_answers aa join questions q on q.id=aa.question_id
- where aa.attempt_id=p_attempt_id and aa.selected_option=q.correct_option;
- select pass_score into passscore from exams where id=eid;
- score=case when total=0 then 0 else round(correct::numeric*100/total,2) end;
- passed=score>=passscore;
- update attempts set finished_at=now(),score=score,correct_count=correct,answered_count=answered,passed=passed,status=case when p_status in ('expired','finished') then p_status else 'finished' end where id=p_attempt_id;
- return jsonb_build_object('score',score,'correct_count',correct,'answered_count',answered,'total',total,'passed',passed);
+  select exam_id into v_eid from attempts where id = p_attempt_id;
+
+  -- Soru sayısı
+  if p_total_count is not null and p_total_count > 0 then
+    v_total := p_total_count;
+  else
+    select question_count into v_total from exams where id = v_eid;
+    if v_total is null or v_total = 0 then
+      select count(*) into v_total from exam_questions where exam_id = v_eid;
+    end if;
+    if v_total is null or v_total = 0 then
+      v_total := 50;
+    end if;
+  end if;
+
+  -- Cevaplanan soru sayısı
+  if p_answered_count is not null then
+    v_answered := p_answered_count;
+  else
+    select count(*) into v_answered from attempt_answers where attempt_id = p_attempt_id and selected_option is not null;
+  end if;
+
+  -- Doğru soru sayısı
+  if p_correct_count is not null then
+    v_correct := p_correct_count;
+  else
+    select count(*) into v_correct
+    from attempt_answers aa join questions q on q.id = aa.question_id
+    where aa.attempt_id = p_attempt_id and aa.selected_option = q.correct_option;
+  end if;
+
+  -- Baraj puanı
+  select coalesce(pass_score, 70) into v_passscore from exams where id = v_eid;
+
+  -- Puan (100 üzerinden)
+  if p_score is not null then
+    v_score := p_score;
+  else
+    v_score := case when v_total = 0 then 0 else round((v_correct::numeric * 100.0) / v_total, 2) end;
+  end if;
+
+  -- Başarılı / Başarısız durumu
+  if p_passed is not null then
+    v_passed := p_passed;
+  else
+    v_passed := (v_score >= v_passscore);
+  end if;
+
+  update attempts set
+    finished_at    = coalesce(finished_at, now()),
+    score          = v_score,
+    correct_count  = v_correct,
+    answered_count = v_answered,
+    passed         = v_passed,
+    status         = case when p_status in ('expired','finished') then p_status else 'finished' end
+  where id = p_attempt_id;
+
+  return jsonb_build_object(
+    'score', v_score,
+    'correct_count', v_correct,
+    'answered_count', v_answered,
+    'total', v_total,
+    'passed', v_passed
+  );
 end $$;
-revoke all on function finish_attempt(uuid,text) from public;
-grant execute on function finish_attempt(uuid,text) to anon,authenticated;
+revoke all on function finish_attempt(uuid,text,numeric,integer,integer,integer,boolean) from public;
+grant execute on function finish_attempt(uuid,text,numeric,integer,integer,integer,boolean) to anon,authenticated;
 
 -- ------------------------------------------------------------
 -- DETAYLI SINAV SONUÇ İNCELEME (YANLIŞLAR & DOĞRULAR)

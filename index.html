@@ -2827,9 +2827,13 @@
     function trNorm(s) {
       if (!s) return '';
       return String(s)
-        .replace(/İ/g, 'i').replace(/I/g, 'ı')
-        .replace(/Ğ/g, 'ğ').replace(/Ü/g, 'ü')
-        .replace(/Ş/g, 'ş').replace(/Ö/g, 'ö').replace(/Ç/g, 'ç')
+        .trim()
+        .replace(/İ/g, 'i').replace(/I/g, 'i')
+        .replace(/Ğ/g, 'g').replace(/Ü/g, 'u')
+        .replace(/Ş/g, 's').replace(/Ö/g, 'o').replace(/Ç/g, 'c')
+        .replace(/ğ/g, 'g').replace(/ü/g, 'u')
+        .replace(/ş/g, 's').replace(/ö/g, 'o').replace(/ç/g, 'c')
+        .replace(/ı/g, 'i')
         .toLowerCase();
     }
 
@@ -2837,31 +2841,15 @@
       const tbody = $('personnelTableBody');
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Yükleniyor...</td></tr>';
 
-      let data = null;
-
-      // 1. ONCELIKLI: Dogrudan personnel tablosundan cek (limit 999999 - PostgREST 1000 kismini as)
-      try {
-        const d = await client
-          .from('personnel')
-          .select('id,employee_no,full_name,airport,shift,active,is_question_editor,created_at')
-          .order('created_at', { ascending: false })
-          .limit(999999);
-        if (!d.error && d.data && d.data.length >= 0) data = d.data;
-      } catch (e) {}
-
-      // 2. FALLBACK: admin_personnel RPC ile dene (limit zorla)
-      if (!data) {
-        const r = await client.rpc('admin_personnel').limit(999999);
-        if (!r.error) data = r.data || [];
-      }
-
-      if (!data) {
-        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red)">Personel listesi yüklenemedi (RPC ve direct tablo erişimi ikisi de başarısız).</td></tr>';
+      // admin_personnel RPC — tüm veriyi çek
+      const r = await client.rpc('admin_personnel');
+      if (r.error) {
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
         return;
       }
 
-      lastPersonnelData = data;
-      if ($('pCountBadge')) $('pCountBadge').textContent = `${lastPersonnelData.length} / 1000 Personel`;
+      lastPersonnelData = r.data || [];
+      if ($('pCountBadge')) $('pCountBadge').textContent = `${lastPersonnelData.length} Personel`;
       renderPersonnelTable();
     }
 
