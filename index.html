@@ -1398,6 +1398,14 @@
                 <option value="false">Pasif (Giriş Engellensin)</option>
               </select>
             </div>
+            <div class="field" id="pEditorField">
+              <label>Kısmi Admin Yetkisi (Soru Editörü)</label>
+              <select id="pIsQuestionEditor">
+                <option value="false">❌ Normal Personel (Sadece Sınav Çözer)</option>
+                <option value="true">✅ Soru Editörü (Soruları Görür, Doğru Cevabı Değiştirir)</option>
+              </select>
+              <small class="muted">Soru editörleri personel girişi ile sisteme giriş yapar; sadece soru havuzundaki doğru cevap şıkkını değiştirebilir, yeni soru ekleyemez/silemez, personel veya sonuçları göremez.</small>
+            </div>
             <button class="btn green" id="pSubmitBtn" style="width:100%" onclick="savePersonnel()">Personel Hesabını Oluştur</button>
             <button class="btn light hidden" id="pCancelBtn" style="width:100%;margin-top:8px" onclick="resetPersonnelForm()">Formu Temizle / İptal</button>
           </div>
@@ -1418,11 +1426,12 @@
                     <th>Havalimanı</th>
                     <th>Vardiya</th>
                     <th>Durum</th>
+                    <th>Yetki</th>
                     <th>İşlemler</th>
                   </tr>
                 </thead>
                 <tbody id="personnelTableBody">
-                  <tr><td colspan="6" style="text-align:center;color:#94a3b8">Yükleniyor...</td></tr>
+                  <tr><td colspan="7" style="text-align:center;color:#94a3b8">Yükleniyor...</td></tr>
                 </tbody>
               </table>
             </div>
@@ -1526,6 +1535,9 @@
     let reviewData = [];
     let currentFilter = 'wrong';
 
+    // Kısmi admin: Personel olarak giriş yapmış soru editörü modu flag'i
+    let questionEditorMode = false;
+
     // Pan & Drag State
     let isDragging = false;
     let dragStartX = 0;
@@ -1627,6 +1639,15 @@
           return;
         }
         personnel = data[0];
+
+        // Kısmi admin: Soru editörü yetkisi varsa sınav yerine admin panelini (kısıtlı) aç
+        if (personnel && personnel.is_question_editor === true) {
+          questionEditorMode = true;
+          openQuestionEditorPanel();
+          return;
+        }
+
+        // Normal personel: sınava başla
         await startExam();
       } catch (err) {
         $('loginMsg').textContent = 'Bağlantı hatası: ' + (err && err.message ? err.message : err) + ' — Wi-Fi ağına geçin.';
@@ -2309,6 +2330,22 @@
       scale = 1;
       px = 0;
       py = 0;
+      questionEditorMode = false;
+
+      // Admin panel top bar buton ve başlığı sıfırla
+      const admTop = document.querySelector('#adminScreen .top');
+      if (admTop) {
+        const h1 = admTop.querySelector('h1');
+        const btn = admTop.querySelector('button.btn.light');
+        if (h1) h1.textContent = 'Yönetici Paneli';
+        if (btn) {
+          btn.textContent = 'Çıkış Yap';
+          btn.setAttribute('onclick', 'adminLogout()');
+        }
+      }
+
+      // Admin sekme butonlarını tekrar göster (sonraki tam admin girişi için)
+      document.querySelectorAll('.admin-nav .tab-btn').forEach(b => b.style.display = '');
 
       // Tüm ekranları gizle (hidden class'ı ile başlayan ekranlar)
       ['examScreen', 'resultScreen', 'adminScreen', 'adminLogin'].forEach(id => {
@@ -2363,20 +2400,117 @@
         $('adminMsg').textContent = 'Bu hesap yetkili bir yönetici olarak tanımlı değil.';
         return;
       }
-      $('adminLogin').classList.add('hidden');
-      $('adminScreen').classList.remove('hidden');
-      cancelQuestionEdit(); // formu sıfırla ve seçenek inputlarını oluştur
-      loadAdminQuestions();
-      loadPersonnelList();
-      loadResults();
+      questionEditorMode = false; // Tam admin
+      openAdminPanelCommon();
     }
 
+    // Personel olarak kısmi admin (soru editörü) paneli açar
+    function openQuestionEditorPanel() {
+      openAdminPanelCommon();
+      applyEditorRestrictionsUI();
+      $('adminScreen').querySelector('h1').textContent = 'Soru Editör Paneli (Kısmi Admin)';
+      // Çıkış butonunu "Personel Çıkışı" olarak ayarla
+      const top = $('adminScreen').querySelector('.top');
+      if (top) {
+        const logoutBtn = top.querySelector('button.btn.light');
+        if (logoutBtn) {
+          logoutBtn.textContent = '🚪 Personel Çıkışı';
+          logoutBtn.setAttribute('onclick', 'personnelEditorLogout()');
+        }
+      }
+    }
+
+    // Ortak admin/soru editörü panel açma
+    function openAdminPanelCommon() {
+      $('adminLogin').classList.add('hidden');
+      $('loginScreen').classList.add('hidden');
+      $('adminScreen').classList.remove('hidden');
+      const h1 = $('adminScreen').querySelector('h1');
+      if (!questionEditorMode) h1.textContent = 'Yönetici Paneli';
+      cancelQuestionEdit();
+      // Sekme durumunu ilk açılışta sıfırla (admin full ise tüm sekmeler, editör ise sadece questions)
+      resetAdminNavUI();
+      loadAdminQuestions();
+      if (!questionEditorMode) {
+        loadPersonnelList();
+        loadResults();
+      }
+    }
+
+    // Admin sekmelerini role göre sıfırla
+    function resetAdminNavUI() {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+      const tabs = document.querySelectorAll('.admin-nav .tab-btn');
+      if (questionEditorMode) {
+        // Sadece Soru Yönetimi sekmesini aktif et; diğerlerini gizle
+        tabs.forEach((b, i) => {
+          if (i === 0) { b.classList.add('active'); b.style.display = ''; }
+          else b.style.display = 'none';
+        });
+        $('tab-questions').classList.remove('hidden');
+      } else {
+        tabs.forEach(b => b.style.display = '');
+        if (tabs[0]) tabs[0].classList.add('active');
+        $('tab-questions').classList.remove('hidden');
+      }
+    }
+
+    // Kısıtlı soru editörü: form ve butonları gizle/engelle
+    function applyEditorRestrictionsUI() {
+      // Soru ekleme kartı başlığını ve yeni kayıt alanlarını kısıtla
+      const qForm = $('tab-questions').querySelector('.admin-card');
+      if (qForm) {
+        // Görüntüyü kısalt: soru ekleme alanı editör için sadece düzenleme modu aktif
+        // Yeni ekle kısıtlamaları
+        if ($('aText')) $('aText').disabled = true;
+        if ($('aText')) $('aText').placeholder = 'Yeni soru ekleme yetkiniz yok. Sadece mevcut soruların doğru cevabını değiştirebilirsiniz.';
+        if ($('aImage')) $('aImage').parentElement.style.display = 'none';
+        if ($('aDiff')) $('aDiff').disabled = true;
+        if ($('aOptCount')) $('aOptCount').disabled = true;
+        if ($('aOptionsContainer')) {
+          const inp = $('aOptionsContainer').querySelectorAll('input,textarea');
+          inp.forEach(i => i.disabled = true);
+        }
+        const formTitle = $('qFormTitle');
+        if (formTitle) {
+          formTitle.textContent = '✏️ Soru Editörü (Sadece Doğru Cevap Değiştirilebilir)';
+          formTitle.style.color = '#f59e0b';
+        }
+        // Yeni soru ekleme butonu -> "Düzenlemeyi İptal" gibi davransın, submit özelliğini kısıtla
+        const qFormBtn = document.querySelector('#tab-questions .admin-card button.btn.green');
+        if (qFormBtn) {
+          qFormBtn.style.opacity = '0.5';
+        }
+      }
+    }
+
+    // Admin panelinden çıkış (tam admin için)
     async function adminLogout() {
       await client.auth.signOut();
       location.reload();
     }
 
+    // Soru editörü (personel) için çıkış
+    function personnelEditorLogout() {
+      // Buton ve başlığı eski haline geri döndür (sonraki tam admin girişi için)
+      const top = $('adminScreen').querySelector('.top');
+      if (top) {
+        const logoutBtn = top.querySelector('button.btn.light');
+        if (logoutBtn) {
+          logoutBtn.textContent = 'Çıkış Yap';
+          logoutBtn.setAttribute('onclick', 'adminLogout()');
+        }
+      }
+      goToLogin();
+    }
+
     function switchAdminTab(tabName) {
+      // Soru editörü sadece Soru Yönetimi sekmesini kullanabilir
+      if (questionEditorMode && tabName !== 'questions') {
+        toast('Soru editörü olarak bu sekmeye erişiminiz yok.');
+        return;
+      }
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
 
@@ -2433,9 +2567,30 @@
       document.getElementById('aImage').value = '';
       document.getElementById('aDiff').value = '1';
       document.getElementById('aOptCount').value = '5';
-      document.getElementById('qFormTitle').textContent = 'Yeni X-Ray Sorusu Ekle';
       document.getElementById('qCancelEditBtn').style.display = 'none';
       updateOptCountUI();
+
+      if (questionEditorMode) {
+        document.getElementById('qFormTitle').textContent = '✏️ Soru Editörü (Sadece Doğru Cevap Değiştirilebilir)';
+        document.getElementById('qFormTitle').style.color = '#f59e0b';
+        // Editor: tüm alanları yeniden disabled yap, sadece aCorrect enable
+        applyEditorRestrictionsUI();
+        if ($('aCorrect')) $('aCorrect').disabled = false;
+      } else {
+        document.getElementById('qFormTitle').textContent = 'Yeni X-Ray Sorusu Ekle';
+        document.getElementById('qFormTitle').style.color = '';
+        if ($('aText')) $('aText').disabled = false;
+        if ($('aDiff')) $('aDiff').disabled = false;
+        if ($('aOptCount')) $('aOptCount').disabled = false;
+        if ($('aCorrect')) $('aCorrect').disabled = false;
+        if ($('aImage')) $('aImage').parentElement.style.display = '';
+        if ($('aOptionsContainer')) {
+          const inp = $('aOptionsContainer').querySelectorAll('input,textarea');
+          inp.forEach(i => i.disabled = false);
+        }
+        const qFormBtn = document.querySelector('#tab-questions .admin-card button.btn.green');
+        if (qFormBtn) qFormBtn.style.opacity = '1';
+      }
     }
 
     // Soruyu düzenleme moduna yükle
@@ -2449,9 +2604,6 @@
       document.getElementById('aText').value = q.question_text || '';
       document.getElementById('aDiff').value = q.difficulty || 1;
       document.getElementById('aOptCount').value = opts.length || 5;
-      document.getElementById('qFormTitle').textContent = '✏️ Soruyu Düzenle';
-      document.getElementById('qCancelEditBtn').style.display = '';
-
       updateOptCountUI();
 
       // Seçenek değerlerini doldur
@@ -2460,18 +2612,72 @@
 
       document.getElementById('aCorrect').value = q.correct_option ?? 0;
 
+      if (questionEditorMode) {
+        document.getElementById('qFormTitle').textContent = '🔧 Sadece Doğru Cevabı Değiştir (Görüntü ve Seçenekler SALT OKUNUR)';
+        document.getElementById('qFormTitle').style.color = '#dc2626';
+        document.getElementById('qCancelEditBtn').style.display = '';
+        // Diğer tüm alanları kilitle, sadece aCorrect açık kalsın
+        if ($('aText')) $('aText').disabled = true;
+        if ($('aImage')) $('aImage').parentElement.style.display = 'none';
+        if ($('aDiff')) $('aDiff').disabled = true;
+        if ($('aOptCount')) $('aOptCount').disabled = true;
+        if ($('aCorrect')) $('aCorrect').disabled = false;
+        if ($('aOptionsContainer')) {
+          const inp = $('aOptionsContainer').querySelectorAll('input,textarea');
+          inp.forEach(i => i.disabled = true);
+        }
+      } else {
+        document.getElementById('qFormTitle').textContent = '✏️ Soruyu Düzenle';
+        document.getElementById('qFormTitle').style.color = '';
+        document.getElementById('qCancelEditBtn').style.display = '';
+        if ($('aText')) $('aText').disabled = false;
+        if ($('aDiff')) $('aDiff').disabled = false;
+        if ($('aOptCount')) $('aOptCount').disabled = false;
+        if ($('aCorrect')) $('aCorrect').disabled = false;
+        if ($('aOptionsContainer')) {
+          const inp = $('aOptionsContainer').querySelectorAll('input,textarea');
+          inp.forEach(i => i.disabled = false);
+        }
+      }
+
       // Forma kaydır
       document.getElementById('qFormTitle').scrollIntoView({ behavior: 'smooth' });
     }
 
-    // Kaydet (hem yeni ekleme hem güncelleme)
+    // Kaydet (hem yeni ekleme hem güncelleme; soru editörü sadece Doğru Cevap günceller)
     async function saveQuestion() {
       const editId = document.getElementById('aEditId').value.trim();
+      const correct = Number(document.getElementById('aCorrect').value);
+
+      // ====== SORU EDİTÖRÜ MODU: SADECE DOĞRU CEVAP GÜNCELLE ======
+      if (questionEditorMode) {
+        if (!editId) {
+          toast('Soru editörü olarak yeni soru ekleyemezsiniz. Mevcut soruyu seçip doğru cevabı değiştirin.');
+          return;
+        }
+        if (!personnel || !personnel.id) {
+          toast('Geçersiz oturum. Lütfen tekrar giriş yapın.');
+          return;
+        }
+        const r = await client.rpc('qeditor_update_correct', {
+          p_personnel_id: personnel.id,
+          p_question_id: editId,
+          p_correct: correct
+        });
+        if (r.error) {
+          toast('Doğru cevap güncellenemedi: ' + r.error.message);
+          return;
+        }
+        toast('✅ Doğru cevap başarıyla güncellendi.');
+        cancelQuestionEdit();
+        loadAdminQuestions();
+        return;
+      }
+
+      // ====== NORMAL ADMİN MODU: TÜM İŞLEMLER ======
       const text = document.getElementById('aText').value.trim();
       const file = document.getElementById('aImage').files[0];
-      const correct = Number(document.getElementById('aCorrect').value);
       const diff = Number(document.getElementById('aDiff').value);
-
       const inputs = document.getElementById('aOptionsContainer').querySelectorAll('input');
       const opts = Array.from(inputs).map(inp => inp.value.trim()).filter(Boolean);
 
@@ -2521,7 +2727,7 @@
 
     async function loadAdminQuestions() {
       const tbody = $('questionTableBody');
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Yükleniyor...</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center">Yükleniyor...</td></tr>`;
       window.adminQuestionCache = {};
 
       // Her zaman doğrudan DB'den çek — en güncel veri
@@ -2536,7 +2742,7 @@
       }
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8">Henüz eklenmiş soru bulunamadı.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#94a3b8">Henüz eklenmiş soru bulunamadı.</td></tr>`;
         return;
       }
 
@@ -2552,16 +2758,22 @@
         const tr = document.createElement('tr');
         const imgUrl = getImage(q.image_path);
         const keys = ['A', 'B', 'C', 'D', 'E'];
+        let actionsTd;
+        if (questionEditorMode) {
+          actionsTd = `<td style="white-space:nowrap"><button class="btn cyan" style="padding:4px 8px;font-size:11px" onclick="editQuestion(window.adminQuestionCache['${q.id}'])">🔧 Doğru Cevabı Değiştir</button></td>`;
+        } else {
+          actionsTd = `<td style="white-space:nowrap">
+            <button class="btn light" style="padding:4px 8px;font-size:11px" onclick="editQuestion(window.adminQuestionCache['${q.id}'])">✏️ Düzenle</button>
+            <button class="btn red" style="padding:4px 8px;font-size:11px;margin-left:4px" onclick="deleteQuestion('${q.id}')">🗑️ Sil</button>
+          </td>`;
+        }
         tr.innerHTML = `
           <td><img src="${imgUrl}" style="width:48px;height:36px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1"></td>
           <td style="max-width:200px;font-weight:600">${q.question_text}</td>
           <td><span class="badge" style="background:#e2e8f0;color:#334155">Seviye ${q.difficulty}</span></td>
           <td><b style="color:var(--green)">${keys[q.correct_option] || '?'}</b></td>
           <td><span style="color:#64748b;font-size:12px">${opts.length} seçenek</span></td>
-          <td style="white-space:nowrap">
-            <button class="btn light" style="padding:4px 8px;font-size:11px" onclick="editQuestion(window.adminQuestionCache['${q.id}'])">✏️ Düzenle</button>
-            <button class="btn red" style="padding:4px 8px;font-size:11px;margin-left:4px" onclick="deleteQuestion('${q.id}')">🗑️ Sil</button>
-          </td>
+          ${actionsTd}
         `;
         tbody.appendChild(tr);
       });
@@ -2606,10 +2818,10 @@
 
     async function loadPersonnelList() {
       const tbody = $('personnelTableBody');
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Yükleniyor...</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Yükleniyor...</td></tr>';
       const r = await client.rpc('admin_personnel');
       if (r.error) {
-        tbody.innerHTML = `<tr><td colspan="6" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
         return;
       }
       lastPersonnelData = r.data || [];
@@ -2631,7 +2843,7 @@
       }
 
       if (!filtered || filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#94a3b8">Kayıtlı personel bulunamadı.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8">Kayıtlı personel bulunamadı.</td></tr>';
         return;
       }
 
@@ -2639,12 +2851,16 @@
       filtered.forEach(p => {
         const tr = document.createElement('tr');
         const activeBadge = p.active ? '<span class="badge pass">Aktif</span>' : '<span class="badge fail">Pasif</span>';
+        const editorBadge = p.is_question_editor
+          ? '<span class="badge" style="background:#fef3c7;color:#92400e">✏️ Soru Editörü</span>'
+          : '<span class="badge" style="background:#e0f2fe;color:#075985">Personel</span>';
         tr.innerHTML = `
           <td><b>${p.employee_no}</b></td>
           <td>${p.full_name}</td>
           <td>${p.airport || '-'}</td>
           <td>${p.shift || '-'}</td>
           <td>${activeBadge}</td>
+          <td>${editorBadge}</td>
           <td style="white-space:nowrap">
             <button class="btn light" style="padding:4px 8px;font-size:11px" onclick="editPersonnel('${p.id}')">✏️ Düzenle</button>
             <button class="btn cyan" style="padding:4px 8px;font-size:11px" onclick="viewPersonnelExamHistory('${p.employee_no}')">📊 Sınavları</button>
@@ -2663,6 +2879,7 @@
       const airport = $('pAirport').value.trim();
       const shift = $('pShift').value.trim();
       const active = $('pActive').value === 'true';
+      const isEditor = $('pIsQuestionEditor').value === 'true';
 
       if (!no || !name) {
         toast('Sicil No ve Ad Soyad alanları zorunludur.');
@@ -2683,7 +2900,8 @@
           p_airport: airport,
           p_shift: shift,
           p_password: pass || null,
-          p_active: active
+          p_active: active,
+          p_is_question_editor: isEditor
         });
         if (r.error) {
           toast('Güncelleme hatası: ' + r.error.message);
@@ -2697,7 +2915,8 @@
           p_full_name: name,
           p_airport: airport,
           p_shift: shift,
-          p_password: pass
+          p_password: pass,
+          p_is_question_editor: isEditor
         });
         if (r.error) {
           toast('Oluşturma hatası: ' + r.error.message);
@@ -2721,6 +2940,7 @@
       $('pShift').value = p.shift || '';
       $('pPass').value = '';
       $('pActive').value = p.active ? 'true' : 'false';
+      $('pIsQuestionEditor').value = p.is_question_editor ? 'true' : 'false';
 
       $('pFormTitle').textContent = '✏️ Personel Bilgilerini Düzenle';
       $('pSubmitBtn').textContent = 'Değişiklikleri Kaydet';
@@ -2732,6 +2952,7 @@
       $('pEditId').value = '';
       ['pNo', 'pName', 'pAirport', 'pShift', 'pPass'].forEach(id => $(id).value = '');
       $('pActive').value = 'true';
+      $('pIsQuestionEditor').value = 'false';
       $('pFormTitle').textContent = 'Yeni Personel Tanımla';
       $('pSubmitBtn').textContent = 'Personel Hesabını Oluştur';
       $('pPassHint').textContent = '(Zorunlu)';
