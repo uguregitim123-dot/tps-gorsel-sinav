@@ -1398,14 +1398,6 @@
                 <option value="false">Pasif (Giriş Engellensin)</option>
               </select>
             </div>
-            <div class="field" id="pEditorField">
-              <label>Kısmi Admin Yetkisi (Soru Editörü)</label>
-              <select id="pIsQuestionEditor">
-                <option value="false">❌ Normal Personel (Sadece Sınav Çözer)</option>
-                <option value="true">✅ Soru Editörü (Soruları Görür, Doğru Cevabı Değiştirir)</option>
-              </select>
-              <small class="muted">Soru editörleri personel girişi ile sisteme giriş yapar; sadece soru havuzundaki doğru cevap şıkkını değiştirebilir, yeni soru ekleyemez/silemez, personel veya sonuçları göremez.</small>
-            </div>
             <button class="btn green" id="pSubmitBtn" style="width:100%" onclick="savePersonnel()">Personel Hesabını Oluştur</button>
             <button class="btn light hidden" id="pCancelBtn" style="width:100%;margin-top:8px" onclick="resetPersonnelForm()">Formu Temizle / İptal</button>
           </div>
@@ -2940,7 +2932,6 @@
       const airport = $('pAirport').value.trim();
       const shift = $('pShift').value.trim();
       const active = $('pActive').value === 'true';
-      const isEditor = $('pIsQuestionEditor').value === 'true';
 
       if (!no || !name) {
         toast('Sicil No ve Ad Soyad alanları zorunludur.');
@@ -2961,8 +2952,7 @@
           p_airport: airport,
           p_shift: shift,
           p_password: pass || null,
-          p_active: active,
-          p_is_question_editor: isEditor
+          p_active: active
         });
         if (r.error) {
           toast('Güncelleme hatası: ' + r.error.message);
@@ -2976,8 +2966,7 @@
           p_full_name: name,
           p_airport: airport,
           p_shift: shift,
-          p_password: pass,
-          p_is_question_editor: isEditor
+          p_password: pass
         });
         if (r.error) {
           toast('Oluşturma hatası: ' + r.error.message);
@@ -3001,7 +2990,6 @@
       $('pShift').value = p.shift || '';
       $('pPass').value = '';
       $('pActive').value = p.active ? 'true' : 'false';
-      $('pIsQuestionEditor').value = p.is_question_editor ? 'true' : 'false';
 
       $('pFormTitle').textContent = '✏️ Personel Bilgilerini Düzenle';
       $('pSubmitBtn').textContent = 'Değişiklikleri Kaydet';
@@ -3013,7 +3001,6 @@
       $('pEditId').value = '';
       ['pNo', 'pName', 'pAirport', 'pShift', 'pPass'].forEach(id => $(id).value = '');
       $('pActive').value = 'true';
-      $('pIsQuestionEditor').value = 'false';
       $('pFormTitle').textContent = 'Yeni Personel Tanımla';
       $('pSubmitBtn').textContent = 'Personel Hesabını Oluştur';
       $('pPassHint').textContent = '(Zorunlu)';
