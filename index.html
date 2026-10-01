@@ -1416,7 +1416,15 @@
               <span class="badge" style="background:#e0f2fe;color:#0369a1;font-size:11px" id="pCountBadge">0 / 1000 Personel</span>
               <button class="btn light" onclick="loadPersonnelList()">Yenile</button>
             </div>
-            <input id="pSearch" placeholder="🔍 Sicil no, ad soyad veya havalimanı ile ara..." style="margin-bottom:12px;padding:8px 12px;width:100%;border:1px solid #cbd5e1;border-radius:6px;font-size:12px" oninput="renderPersonnelTable()">
+            <div class="row" style="gap:8px;margin-bottom:12px">
+              <input id="pSearch" placeholder="🔍 Sicil no, ad soyad, havalimanı veya vardiya ile ara..." style="flex:1;padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px" oninput="renderPersonnelTable()">
+              <select id="pSort" onchange="renderPersonnelTable()" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px;background:white">
+                <option value="created_desc">🕐 En son eklenen (varsayılan)</option>
+                <option value="name_asc">🔤 Ad Soyad A → Z</option>
+                <option value="name_desc">🔤 Ad Soyad Z → A</option>
+                <option value="sicil_asc">🔢 Sicil No Küçük → Büyük</option>
+              </select>
+            </div>
             <div style="max-height:460px;overflow-y:auto">
               <table class="table">
                 <thead>
@@ -2828,12 +2836,31 @@
     async function loadPersonnelList() {
       const tbody = $('personnelTableBody');
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Yükleniyor...</td></tr>';
-      const r = await client.rpc('admin_personnel');
-      if (r.error) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
+
+      let data = null;
+
+      // 1. ONCELIKLI: Dogrudan personnel tablosundan cek (limit 999999 - PostgREST 1000 kismini as)
+      try {
+        const d = await client
+          .from('personnel')
+          .select('id,employee_no,full_name,airport,shift,active,is_question_editor,created_at')
+          .order('created_at', { ascending: false })
+          .limit(999999);
+        if (!d.error && d.data && d.data.length >= 0) data = d.data;
+      } catch (e) {}
+
+      // 2. FALLBACK: admin_personnel RPC ile dene (limit zorla)
+      if (!data) {
+        const r = await client.rpc('admin_personnel').limit(999999);
+        if (!r.error) data = r.data || [];
+      }
+
+      if (!data) {
+        tbody.innerHTML = '<tr><td colspan="7" style="color:var(--red)">Personel listesi yüklenemedi (RPC ve direct tablo erişimi ikisi de başarısız).</td></tr>';
         return;
       }
-      lastPersonnelData = r.data || [];
+
+      lastPersonnelData = data;
       if ($('pCountBadge')) $('pCountBadge').textContent = `${lastPersonnelData.length} / 1000 Personel`;
       renderPersonnelTable();
     }
@@ -2841,6 +2868,7 @@
     function renderPersonnelTable() {
       const tbody = $('personnelTableBody');
       const query = trNorm($('pSearch') ? $('pSearch').value.trim() : '');
+      const sortKey = $('pSort') ? $('pSort').value : 'created_desc';
 
       let filtered = lastPersonnelData;
       if (query) {
@@ -2852,13 +2880,26 @@
         );
       }
 
-      if (!filtered || filtered.length === 0) {
+      // Sıralama uygula
+      const sorted = filtered.slice();
+      if (sortKey === 'name_asc') {
+        sorted.sort((a, b) => trNorm(a.full_name).localeCompare(trNorm(b.full_name), 'tr'));
+      } else if (sortKey === 'name_desc') {
+        sorted.sort((a, b) => trNorm(b.full_name).localeCompare(trNorm(a.full_name), 'tr'));
+      } else if (sortKey === 'sicil_asc') {
+        sorted.sort((a, b) => String(a.employee_no || '').localeCompare(String(b.employee_no || ''), 'tr', { numeric: true }));
+      } else {
+        // created_desc (varsayılan)
+        sorted.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      }
+
+      if (!sorted || sorted.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8">Kayıtlı personel bulunamadı.</td></tr>';
         return;
       }
 
       tbody.innerHTML = '';
-      filtered.forEach(p => {
+      sorted.forEach(p => {
         const tr = document.createElement('tr');
         const activeBadge = p.active ? '<span class="badge pass">Aktif</span>' : '<span class="badge fail">Pasif</span>';
         const editorBadge = p.is_question_editor
