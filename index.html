@@ -2841,15 +2841,37 @@
       const tbody = $('personnelTableBody');
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center">Yükleniyor...</td></tr>';
 
-      // admin_personnel RPC — tüm veriyi çek
-      const r = await client.rpc('admin_personnel');
-      if (r.error) {
-        tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
-        return;
+      // Supabase 1000 limit'ini aşmak için sayfalı çekme
+      let allData = [];
+      let from = 0;
+      const pageSize = 1000;
+
+      while (true) {
+        const { data, error } = await client
+          .from('personnel')
+          .select('id,employee_no,full_name,airport,shift,active,created_at')
+          .order('full_name', { ascending: true })
+          .range(from, from + pageSize - 1);
+
+        if (error) {
+          // Doğrudan tablo erişimi başarısız — RPC dene
+          const r = await client.rpc('admin_personnel');
+          if (r.error) {
+            tbody.innerHTML = `<tr><td colspan="7" style="color:var(--red)">Hata: ${r.error.message}</td></tr>`;
+            return;
+          }
+          allData = r.data || [];
+          break;
+        }
+
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < pageSize) break; // son sayfa
+        from += pageSize;
       }
 
-      lastPersonnelData = r.data || [];
-      if ($('pCountBadge')) $('pCountBadge').textContent = `${lastPersonnelData.length} Personel`;
+      lastPersonnelData = allData;
+      if ($('pCountBadge')) $('pCountBadge').textContent = `${allData.length} Personel`;
       renderPersonnelTable();
     }
 
